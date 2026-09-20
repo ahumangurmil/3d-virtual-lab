@@ -18,6 +18,7 @@ import { ApparatusModel } from '../components/apparatus/ApparatusModel';
  * - movementRef: RefObject<{ isMoving: boolean, isRunning: boolean, speed: number, animationState: string }>
  * - movementState: { isMoving: boolean, isRunning: boolean, speed: number, animationState: string }
  * - isLocal: boolean
+ * - isFirstPerson: boolean
  * - heldApparatus: object | null
  */
 export function PlayerAvatar({
@@ -29,6 +30,7 @@ export function PlayerAvatar({
   movementRef = null,
   movementState = { isMoving: false, isRunning: false, animationState: 'idle' },
   isLocal = true,
+  isFirstPerson = true,
   heldApparatus = null,
 }) {
   const groupRef = useRef();
@@ -98,27 +100,30 @@ export function PlayerAvatar({
   });
 
   const isTeacher = role === 'teacher';
+  const showThirdPersonMesh = !(isLocal && isFirstPerson);
 
   return (
     <group ref={groupRef} position={position} rotation={rotation} name={`avatar-${name}`}>
-      {/* ================= DIRECTION & SELECTION RING ================= */}
-      <group position={[0, 0.015, 0]}>
-        {/* Soft ground shadow circle */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.38, 24]} />
-          <meshBasicMaterial color="#0f172a" transparent opacity={0.18} />
-        </mesh>
-        {/* Accent player boundary ring */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.36, 0.4, 32]} />
-          <meshBasicMaterial color={color} transparent opacity={0.7} />
-        </mesh>
-        {/* Forward direction arrow pointer */}
-        <mesh position={[0, 0.001, -0.44]} rotation={[-Math.PI / 2, 0, 0]}>
-          <coneGeometry args={[0.08, 0.14, 3]} />
-          <meshBasicMaterial color={color} />
-        </mesh>
-      </group>
+      {/* 3D Visual Mesh Hierarchy (hidden in local first-person so eyes have clear unobstructed view, visible for remote players) */}
+      <group visible={showThirdPersonMesh}>
+        {/* ================= DIRECTION & SELECTION RING ================= */}
+        <group position={[0, 0.015, 0]}>
+          {/* Soft ground shadow circle */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.38, 24]} />
+            <meshBasicMaterial color="#0f172a" transparent opacity={0.18} />
+          </mesh>
+          {/* Accent player boundary ring */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.36, 0.4, 32]} />
+            <meshBasicMaterial color={color} transparent opacity={0.7} />
+          </mesh>
+          {/* Forward direction arrow pointer */}
+          <mesh position={[0, 0.001, -0.44]} rotation={[-Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.08, 0.14, 3]} />
+            <meshBasicMaterial color={color} />
+          </mesh>
+        </group>
 
       {/* ================= LEGS & SHOES ================= */}
       {/* Left Leg */}
@@ -390,6 +395,7 @@ export function PlayerAvatar({
           )}
         </div>
       </Html>
+      </group>
     </group>
   );
 }

@@ -7,13 +7,15 @@ import { createInitialPlayerState } from './playerTypes';
 import { PlayerAvatar } from './PlayerAvatar';
 
 /**
- * Player Controller Component.
+ * Player Controller Component (First-Person POV).
  * Encapsulates:
- * - WASD & Arrow Key input handling
- * - Walk / Run speed states (Shift key)
+ * - First-Person Camera at student eye level (~1.65m)
+ * - Mouse look with pointer lock and drag fallback (yaw/pitch)
+ * - WASD & Arrow Key movement relative to view angle
+ * - Walk / Sprint speed states (Shift key)
  * - Axis-sliding collision detection with walls, benches, and fixed equipment
- * - Mouse-based 3rd-person camera look & follow controls
- * - Player state tracking structured for future Socket.IO synchronization
+ * - Authoritative player state tracking structured for future Socket.IO synchronization
+ * - Non-obstructing local avatar representation preserved for multiplayer readiness
  */
 export function PlayerController({
   playerName = 'Arjun Sharma',
@@ -34,7 +36,7 @@ export function PlayerController({
       role,
       color,
       position: [0, 0, 8.5], // Spawns in rear central corridor
-      rotation: [0, Math.PI, 0],
+      rotation: [0, 0, 0], // Facing forward into lab (-Z)
     })
   );
 
@@ -47,8 +49,14 @@ export function PlayerController({
   // Movement physics tracking
   const currentPos = useRef(new THREE.Vector3(0, 0, 8.5));
   const currentVel = useRef(new THREE.Vector3(0, 0, 0));
-  const currentRotY = useRef(Math.PI);
-  const targetRotY = useRef(Math.PI);
+  const currentRotY = useRef(0);
+
+  // First-Person Camera Look Angles
+  // yaw = 0 faces -Z (toward the teacher demonstration bench and blackboard)
+  const cameraYaw = useRef(0);
+  const cameraPitch = useRef(0); // 0 = level eye line
+  const isDragging = useRef(false);
+  const previousMousePosition = useRef({ x: 0, y: 0 });
 
   // Handle teleportation to stations or points
   useEffect(() => {
@@ -57,22 +65,11 @@ export function PlayerController({
       currentVel.current.set(0, 0, 0);
       if (teleportTarget.rotY !== undefined) {
         currentRotY.current = teleportTarget.rotY;
-        targetRotY.current = teleportTarget.rotY;
         cameraYaw.current = teleportTarget.rotY;
       }
+      cameraPitch.current = 0;
     }
   }, [teleportTarget]);
-
-  // Mouse camera look tracking
-  const cameraYaw = useRef(Math.PI); // Horizontal rotation
-  const cameraPitch = useRef(0.28); // Vertical rotation (tilt)
-  const cameraDistance = useRef(3.8); // Distance from avatar
-  const isDragging = useRef(false);
-  const previousMousePosition = useRef({ x: 0, y: 0 });
-
-  // Camera damping targets
-  const cameraTarget = useRef(new THREE.Vector3(0, 1.35, 8.5));
-  const desiredCamPos = useRef(new THREE.Vector3(0, 2.5, 12.0));
 
   // Avatar group ref and movement ref
   const avatarGroupRef = useRef();
@@ -83,48 +80,63 @@ export function PlayerController({
     animationState: 'idle',
   });
 
-  // Setup Mouse Look & Zoom Event Listeners on the Canvas element
+  // Setup First-Person Mouse Look (Pointer Lock with Smooth Drag Fallback)
   useEffect(() => {
     const domElement = gl.domElement;
     if (!domElement) return;
 
+    const requestLock = () => {
+      if (!isActive) return;
+      if (document.pointerLockElement !== domElement && domElement.requestPointerLock) {
+        domElement.requestPointerLock();
+      }
+    };
+
     const onPointerDown = (e) => {
-      // Left click (button 0) or Right click (button 2) for camera rotation
+      if (!isActive) return;
+      isDragging.current = true;
+      previousMousePosition.current = { x: e.clientX, y: e.clientY };
+
+      // Left or right click requests pointer lock for game-like mouse look
       if (e.button === 0 || e.button === 2) {
-        isDragging.current = true;
-        previousMousePosition.current = { x: e.clientX, y: e.clientY };
+        requestLock();
       }
     };
 
     const onPointerMove = (e) => {
-      if (!isDragging.current) return;
+      if (!isActive) return;
 
-      const deltaX = e.clientX - previousMousePosition.current.x;
-      const deltaY = e.clientY - previousMousePosition.current.y;
+      const isPointerLocked = document.pointerLockElement === domElement;
 
-      previousMousePosition.current = { x: e.clientX, y: e.clientY };
+      if (isPointerLocked) {
+        // Native pointer lock mouse delta
+        const sensitivity = 0.0022;
+        const movementX = e.movementX || 0;
+        const movementY = e.movementY || 0;
 
-      const sensitivity = 0.0045;
-      cameraYaw.current -= deltaX * sensitivity;
+        cameraYaw.current -= movementX * sensitivity;
+        // Pitch clamped between -85 deg (-1.48 rad) looking down and +85 deg looking up
+        cameraPitch.current = Math.max(
+          -1.48,
+          Math.min(1.48, cameraPitch.current - movementY * sensitivity)
+        );
+      } else if (isDragging.current) {
+        // Drag fallback (useful in iframes or before pointer lock engaged)
+        const deltaX = e.clientX - previousMousePosition.current.x;
+        const deltaY = e.clientY - previousMousePosition.current.y;
+        previousMousePosition.current = { x: e.clientX, y: e.clientY };
 
-      // Clamp pitch between -10 deg and 75 deg
-      cameraPitch.current = Math.max(
-        -0.08,
-        Math.min(1.22, cameraPitch.current + deltaY * sensitivity)
-      );
+        const sensitivity = 0.0035;
+        cameraYaw.current -= deltaX * sensitivity;
+        cameraPitch.current = Math.max(
+          -1.48,
+          Math.min(1.48, cameraPitch.current - deltaY * sensitivity)
+        );
+      }
     };
 
     const onPointerUp = () => {
       isDragging.current = false;
-    };
-
-    const onWheel = (e) => {
-      if (!isActive) return;
-      // Smooth zoom distance between 1.8m and 7.2m
-      cameraDistance.current = Math.max(
-        1.8,
-        Math.min(7.5, cameraDistance.current + e.deltaY * 0.0035)
-      );
     };
 
     const onContextMenu = (e) => {
@@ -135,19 +147,17 @@ export function PlayerController({
     domElement.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
-    domElement.addEventListener('wheel', onWheel, { passive: true });
     domElement.addEventListener('contextmenu', onContextMenu);
 
     return () => {
       domElement.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
-      domElement.removeEventListener('wheel', onWheel);
       domElement.removeEventListener('contextmenu', onContextMenu);
     };
   }, [gl, isActive]);
 
-  // Main Movement & Camera Follow Loop (60/120 FPS)
+  // Main First-Person Movement & Camera Update Loop (60/120 FPS)
   useFrame((state, delta) => {
     if (!isActive) return;
 
@@ -156,7 +166,7 @@ export function PlayerController({
 
     const { forward, backward, left, right, run } = keys.current;
 
-    // 1. Calculate Input Direction in Camera-Relative Space
+    // 1. Calculate Input Direction in First-Person Camera Space
     let inputX = 0;
     let inputZ = 0;
 
@@ -167,7 +177,7 @@ export function PlayerController({
 
     const hasInput = inputX !== 0 || inputZ !== 0;
 
-    // Speed configuration (Walking: 3.2 m/s, Running: 6.2 m/s)
+    // Speed configuration (Walking: 3.2 m/s, Sprinting: 6.2 m/s)
     const targetSpeed = hasInput ? (run ? 6.2 : 3.2) : 0;
 
     let targetVelX = 0;
@@ -180,7 +190,7 @@ export function PlayerController({
       const normZ = inputZ / inputLen;
 
       // Rotate movement vector by current camera yaw
-      // Forward (normZ = -1) points where camera is facing
+      // Forward (normZ = -1) moves toward where the student's eyes are looking
       const cosYaw = Math.cos(cameraYaw.current);
       const sinYaw = Math.sin(cameraYaw.current);
 
@@ -189,13 +199,10 @@ export function PlayerController({
 
       targetVelX = moveWorldX * targetSpeed;
       targetVelZ = moveWorldZ * targetSpeed;
-
-      // Target avatar rotation to face movement direction
-      targetRotY.current = Math.atan2(moveWorldX, moveWorldZ);
     }
 
     // 2. Smooth Acceleration and Deceleration
-    const accelRate = hasInput ? 12.0 : 16.0;
+    const accelRate = hasInput ? 14.0 : 18.0;
     currentVel.current.x = THREE.MathUtils.lerp(currentVel.current.x, targetVelX, dt * accelRate);
     currentVel.current.z = THREE.MathUtils.lerp(currentVel.current.z, targetVelZ, dt * accelRate);
 
@@ -218,18 +225,12 @@ export function PlayerController({
     currentPos.current.x = resolved.x;
     currentPos.current.z = resolved.z;
 
-    // 4. Smooth Rotation (Turn towards movement direction)
-    if (isMoving) {
-      let diff = targetRotY.current - currentRotY.current;
-      // Normalize angle difference to [-PI, PI] for shortest rotation path
-      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-      currentRotY.current += diff * Math.min(1.0, dt * 14.0);
-    }
+    // 4. Update Avatar Position & Heading
+    currentRotY.current = cameraYaw.current;
 
-    // 5. Update Visual Avatar Transforms
     if (avatarGroupRef.current) {
       avatarGroupRef.current.position.set(currentPos.current.x, 0, currentPos.current.z);
-      avatarGroupRef.current.rotation.y = currentRotY.current;
+      avatarGroupRef.current.rotation.y = cameraYaw.current;
     }
 
     visualMovement.current = {
@@ -239,11 +240,11 @@ export function PlayerController({
       animationState: isRunning ? 'run' : isMoving ? 'walk' : 'idle',
     };
 
-    // 6. Update Synchronizable Player State Structure
+    // 5. Update Synchronizable Player State Structure (ready for remote replication)
     playerState.current.position[0] = currentPos.current.x;
     playerState.current.position[1] = 0;
     playerState.current.position[2] = currentPos.current.z;
-    playerState.current.rotation[1] = currentRotY.current;
+    playerState.current.rotation[1] = cameraYaw.current;
     playerState.current.movement.isMoving = isMoving;
     playerState.current.movement.isRunning = isRunning;
     playerState.current.movement.speed = actualSpeed;
@@ -256,40 +257,32 @@ export function PlayerController({
       onStateUpdate(playerState.current);
     }
 
-    // 7. Mouse 3rd-Person Camera Look & Position Follow
-    // Target position is centered at avatar shoulder height (1.35m)
-    const targetX = currentPos.current.x;
-    const targetY = 1.35;
-    const targetZ = currentPos.current.z;
+    // 6. First-Person Camera Position & View Vector
+    // Student Eye Level: 1.65 meters above the floor
+    const EYE_HEIGHT = 1.65;
+    const eyeX = currentPos.current.x;
+    const eyeY = EYE_HEIGHT;
+    const eyeZ = currentPos.current.z;
 
-    cameraTarget.current.set(targetX, targetY, targetZ);
+    camera.position.set(eyeX, eyeY, eyeZ);
 
-    // Compute spherical offset
-    const dist = cameraDistance.current;
-    const pitch = cameraPitch.current;
-    const yaw = cameraYaw.current;
+    // Compute forward sight vector from pitch and yaw
+    const dirX = -Math.sin(cameraYaw.current) * Math.cos(cameraPitch.current);
+    const dirY = Math.sin(cameraPitch.current);
+    const dirZ = -Math.cos(cameraYaw.current) * Math.cos(cameraPitch.current);
 
-    const offsetX = Math.sin(yaw) * Math.cos(pitch) * dist;
-    const offsetY = Math.sin(pitch) * dist;
-    const offsetZ = Math.cos(yaw) * Math.cos(pitch) * dist;
-
-    // Ensure camera stays above laboratory floor
-    const targetCamY = Math.max(0.45, targetY + offsetY);
-    desiredCamPos.current.set(targetX + offsetX, targetCamY, targetZ + offsetZ);
-
-    // Smoothly damp camera movement to eliminate motion sickness
-    camera.position.lerp(desiredCamPos.current, Math.min(1.0, dt * 8.0));
-    camera.lookAt(cameraTarget.current);
+    camera.lookAt(eyeX + dirX, eyeY + dirY, eyeZ + dirZ);
   });
 
   return (
-    <group ref={avatarGroupRef} position={[0, 0, 8.5]} rotation={[0, Math.PI, 0]}>
+    <group ref={avatarGroupRef} position={[0, 0, 8.5]} rotation={[0, 0, 0]}>
       <PlayerAvatar
         name={playerName}
         role={role}
         color={color}
         movementRef={visualMovement}
         isLocal={true}
+        isFirstPerson={true}
         heldApparatus={heldApparatus}
       />
     </group>

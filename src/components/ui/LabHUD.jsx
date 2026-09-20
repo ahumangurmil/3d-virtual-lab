@@ -579,27 +579,15 @@ export function LabHUD() {
                 <kbd style={{ background: '#0284c7', color: '#ffffff', border: '1px solid #0284c7', padding: '2px 5px', borderRadius: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700 }}>A</kbd>
                 <kbd style={{ background: '#0284c7', color: '#ffffff', border: '1px solid #0284c7', padding: '2px 5px', borderRadius: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700 }}>S</kbd>
                 <kbd style={{ background: '#0284c7', color: '#ffffff', border: '1px solid #0284c7', padding: '2px 5px', borderRadius: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700 }}>D</kbd>
-                <span style={{ fontWeight: 600, color: '#0f172a', marginLeft: '2px' }}>Move</span>
+                <span style={{ fontWeight: 600, color: '#0f172a', marginLeft: '2px' }}>Walk</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <kbd style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#0f172a', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>Shift</kbd>
-                <span>Sprint / Run</span>
+                <span>Sprint</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <kbd style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#0f172a', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>Mouse Drag</kbd>
-                <span>Look Around</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <kbd style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#0f172a', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>Scroll</kbd>
-                <span>Zoom</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <kbd style={{ background: '#0284c7', color: '#ffffff', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700 }}>E</kbd>
-                <span>Pick Up</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <kbd style={{ background: '#10b981', color: '#ffffff', border: '1px solid #10b981', padding: '2px 6px', borderRadius: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700 }}>F</kbd>
-                <span>Place</span>
+                <kbd style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#0f172a', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>Mouse</kbd>
+                <span>Look Around (Click Canvas to Lock, Esc to Release)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#0d9488', background: '#ccfbf1', padding: '2px 8px', borderRadius: '12px' }}>
