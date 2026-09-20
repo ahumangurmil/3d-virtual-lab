@@ -1,0 +1,105 @@
+export const INITIAL_APPARATUS = [
+  {
+    id: 'beaker-1',
+    type: 'beaker_250',
+    name: '250 mL Beaker',
+    position: [-0.65, 0.92, 0.15],
+    rotation: [0, 0.2, 0],
+    capacity: '250 mL',
+    liquid: {
+      volume: 120,
+      maxVolume: 250,
+      color: '#0284c7', // Aqueous copper sulfate solution
+      name: 'Copper(II) Sulfate Solution',
+      ph: 4.5,
+      temperature: 24,
+    },
+    description: 'Used to hold, mix, and roughly measure liquids. Features a pouring spout and graduation lines.',
+    safetyNotes: 'Check for cracks before use. Use heat-resistant tongs or gloves when warm.',
+  },
+  {
+    id: 'beaker-2',
+    type: 'beaker_500',
+    name: '500 mL Beaker',
+    position: [-1.15, 0.92, -0.1],
+    rotation: [0, -0.4, 0],
+    capacity: '500 mL',
+    liquid: {
+      volume: 320,
+      maxVolume: 500,
+      color: '#f59e0b', // Amber/orange solution
+      name: 'Iron(III) Solution (Dilute)',
+      ph: 3.2,
+      temperature: 23,
+    },
+    description: 'Used for preparing and holding larger solution volumes. Wide base provides stability.',
+    safetyNotes: 'Always keep away from bench edges and carry with two hands when filled.',
+  },
+  {
+    id: 'flask-1',
+    type: 'conical_flask_250',
+    name: 'Conical Flask (Erlenmeyer)',
+    position: [0.0, 0.92, 0.2],
+    rotation: [0, 0.1, 0],
+    capacity: '250 mL',
+    liquid: {
+      volume: 100,
+      maxVolume: 250,
+      color: '#ec4899', // Pink phenolphthalein indicator endpoint
+      name: 'Neutralized Solution (Phenolphthalein)',
+      ph: 8.3,
+      temperature: 24,
+    },
+    description: 'Its conical shape allows liquids to be swirled thoroughly during titrations without risk of spilling.',
+    safetyNotes: 'Ensure the neck stays clear. Do not seal tightly with a stopper if heating.',
+  },
+  {
+    id: 'test-tube-rack-1',
+    type: 'test_tube_rack',
+    name: 'Test Tube Rack',
+    position: [0.8, 0.92, -0.05],
+    rotation: [0, -0.15, 0],
+    capacity: 'Holds 6 test tubes',
+    liquid: null,
+    tubes: [
+      { id: 'tt-1', label: 'T1', color: '#0284c7', volumeRatio: 0.6, name: 'CuSO₄ (Blue)' },
+      { id: 'tt-2', label: 'T2', color: '#9333ea', volumeRatio: 0.45, name: 'KMnO₄ (Purple)' },
+      { id: 'tt-3', label: 'T3', color: '#16a34a', volumeRatio: 0.7, name: 'NiSO₄ (Green)' },
+      { id: 'tt-4', label: 'T4', color: '#eab308', volumeRatio: 0.5, name: 'K₂CrO₄ (Yellow)' },
+      { id: 'tt-5', label: 'T5', color: '#ea580c', volumeRatio: 0.6, name: 'Fe³⁺ (Orange)' },
+      { id: 'tt-6', label: 'T6', color: '#bae6fd', volumeRatio: 0.35, name: 'Water (Clear)' },
+    ],
+    description: 'Holds test tubes safely upright for observing color changes, precipitates, and chemical reactions.',
+    safetyNotes: 'Never point a test tube mouth at yourself or a partner during an experiment.',
+  },
+  {
+    id: 'burner-1',
+    type: 'bunsen_burner',
+    name: 'Bunsen Burner',
+    position: [-0.05, 0.92, -0.4],
+    rotation: [0, 0.5, 0],
+    capacity: 'Adjustable gas flame source',
+    liquid: null,
+    isIgnited: false,
+    description: 'Provides a clean, adjustable flame for boiling solutions, sterilizing wire loops, and conducting flame tests.',
+    safetyNotes: 'Tie back hair and wear safety goggles. Keep flammable solvents away from the open flame.',
+  },
+];
+
+export const CAMERA_PRESETS = {
+  workbench: {
+    name: 'Workbench View',
+    position: [0, 1.8, 1.7],
+    target: [0, 1.0, 0],
+  },
+  overview: {
+    name: 'Lab Overview',
+    position: [2.8, 2.5, 3.4],
+    target: [0, 1.1, 0],
+  },
+  closeup: {
+    name: 'Equipment Focus',
+    position: [-0.1, 1.35, 0.75],
+    target: [-0.1, 1.0, 0],
+  },
+};
