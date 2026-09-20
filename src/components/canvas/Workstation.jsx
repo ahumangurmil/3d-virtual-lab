@@ -20,7 +20,6 @@ export function Workstation({
   hasGas = true,
   hasReagentRack = true,
   isSelected = false,
-  onSelectStation,
   children,
 }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -46,13 +45,6 @@ export function Workstation({
       onPointerOut={(e) => {
         e.stopPropagation();
         setIsHovered(false);
-      }}
-      onClick={(e) => {
-        // If clicking table structure itself, trigger workstation selection
-        e.stopPropagation();
-        if (onSelectStation) {
-          onSelectStation(id);
-        }
       }}
     >
       {/* ================= WORKSTATION FLOOR FOOTPRINT / ZONING ================= */}

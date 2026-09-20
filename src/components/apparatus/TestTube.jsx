@@ -19,7 +19,7 @@ export function TestTube({
   const bottomRadius = radius;
 
   // Liquid fill ratio
-  const fillRatio = liquid && liquid.maxVolume ? Math.min(Math.max(liquid.volume / liquid.maxVolume, 0), 1) : 0.5;
+  const fillRatio = liquid && liquid.maxVolume ? Math.min(Math.max(liquid.volume / liquid.maxVolume, 0), 1) : 0;
   const liquidHeight = (height - bottomRadius) * fillRatio;
   const liquidColor = liquid?.color || '#0284c7';
 

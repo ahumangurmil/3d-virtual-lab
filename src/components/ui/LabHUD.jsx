@@ -27,6 +27,10 @@ export function LabHUD() {
     placeApparatus,
     interactionNotice,
     setInteractionNotice,
+    pourLiquid,
+    addReagent,
+    measureApparatus,
+    heatApparatus,
   } = useLab();
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -406,139 +410,309 @@ export function LabHUD() {
         </div>
       </header>
 
-      {/* ================= INTERACTIVE EQUIPMENT PROMPT BANNER ================= */}
-      {(heldApparatus || targetApparatus) && (
+      {/* ================= FIRST-PERSON AIMING RETICLE ================= */}
+      {controlMode === 'avatar' && povMode === 'first-person' && (
         <div
           style={{
             position: 'absolute',
-            bottom: '72px',
+            top: '50%',
             left: '50%',
-            transform: 'translateX(-50%)',
-            pointerEvents: 'auto',
+            width: '5px',
+            height: '5px',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            borderRadius: '50%',
+            backgroundColor: targetApparatus ? '#38bdf8' : 'rgba(255, 255, 255, 0.75)',
+            boxShadow: targetApparatus
+              ? '0 0 6px rgba(56, 189, 248, 0.9)'
+              : '0 0 2px rgba(0, 0, 0, 0.6)',
+            transition: 'all 0.15s ease',
             zIndex: 30,
           }}
+        />
+      )}
+
+      {/* ================= COMPACT INTERACTION INDICATOR (SLIGHTLY BELOW CENTER) ================= */}
+      {targetApparatus && !selectedApparatus && !heldApparatus && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(50% + 22px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 35,
+            pointerEvents: 'auto',
+          }}
         >
-          {heldApparatus ? (
-            <div
-              className="hud-panel animate-fade-in"
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '2px 7px',
+              borderRadius: '5px',
+              background: 'rgba(15, 23, 42, 0.7)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+              color: '#ffffff',
+              fontSize: '11px',
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {/* [ E ] Interact */}
+            <button
+              type="button"
+              onClick={() => selectApparatus(targetApparatus.id)}
               style={{
-                padding: '8px 18px',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '12px',
-                borderRadius: '24px',
-                border: `1.5px solid ${placementState?.isValid ? '#10b981' : '#f59e0b'}`,
-                background: 'rgba(15, 23, 42, 0.88)',
-                color: '#ffffff',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+                gap: '4px',
+                background: 'transparent',
+                border: 'none',
+                padding: '1px 2px',
+                color: '#f8fafc',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 500,
               }}
+              title={`Interact with ${targetApparatus.name}`}
             >
-              <div
+              <kbd
                 style={{
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  background: placementState?.isValid ? '#10b981' : '#f59e0b',
-                  boxShadow: `0 0 10px ${placementState?.isValid ? '#10b981' : '#f59e0b'}`,
-                }}
-              />
-              <span style={{ fontSize: '12px', fontWeight: 600 }}>
-                Carrying: {heldApparatus.name}
-              </span>
-              <span style={{ color: '#94a3b8', fontSize: '11px' }}>•</span>
-              <button
-                type="button"
-                onClick={placeApparatus}
-                disabled={!placementState?.isValid}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: placementState?.isValid ? '#10b981' : '#334155',
-                  color: placementState?.isValid ? '#ffffff' : '#94a3b8',
-                  border: 'none',
-                  borderRadius: '16px',
-                  padding: '4px 12px',
-                  fontSize: '11px',
+                  background: 'rgba(255, 255, 255, 0.22)',
+                  color: '#ffffff',
+                  padding: '1px 4px',
+                  borderRadius: '3px',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontSize: '10px',
                   fontWeight: 700,
-                  cursor: placementState?.isValid ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.15s',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  lineHeight: '12px',
                 }}
               >
-                <kbd style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '1px 5px', borderRadius: '4px' }}>F</kbd>
-                <span>{placementState?.isValid ? `Place on ${placementState.surfaceName}` : (placementState?.reason || 'Look at bench')}</span>
-              </button>
-            </div>
-          ) : targetApparatus ? (
-            <div
-              className="hud-panel animate-fade-in"
-              style={{
-                padding: '8px 18px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                borderRadius: '24px',
-                border: '1.5px solid #0284c7',
-                background: 'rgba(15, 23, 42, 0.88)',
-                color: '#ffffff',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
-              }}
-            >
-              <span style={{ fontSize: '12px', fontWeight: 600 }}>
-                {targetApparatus.name}
-              </span>
-              {targetApparatus.isPickable ? (
+                E
+              </kbd>
+              <span>Interact</span>
+            </button>
+
+            {/* [ F ] Pick Up (if pickable) */}
+            {targetApparatus.isPickable && (
+              <>
+                <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '9px' }}>•</span>
                 <button
                   type="button"
                   onClick={() => pickUpApparatus(targetApparatus.id)}
                   style={{
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    background: '#0284c7',
-                    color: '#ffffff',
+                    gap: '4px',
+                    background: 'transparent',
                     border: 'none',
-                    borderRadius: '16px',
-                    padding: '4px 12px',
-                    fontSize: '11px',
-                    fontWeight: 700,
+                    padding: '1px 2px',
+                    color: '#38bdf8',
                     cursor: 'pointer',
-                    transition: 'all 0.15s',
+                    fontSize: '11px',
+                    fontWeight: 500,
                   }}
+                  title={`Pick up ${targetApparatus.name}`}
                 >
-                  <kbd style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '1px 5px', borderRadius: '4px' }}>E</kbd>
+                  <kbd
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.25)',
+                      color: '#38bdf8',
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      lineHeight: '12px',
+                    }}
+                  >
+                    F
+                  </kbd>
                   <span>Pick Up</span>
                 </button>
-              ) : (
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>Stationary Apparatus</span>
-              )}
-              <button
-                type="button"
-                onClick={() => selectApparatus(targetApparatus.id)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  color: '#e2e8f0',
-                  border: 'none',
-                  borderRadius: '16px',
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Inspect
-              </button>
-            </div>
-          ) : null}
+              </>
+            )}
+
+            {/* [ P ] Pour Liquid (if carrying a container and targeting another container) */}
+            {heldApparatus && (heldApparatus.capacity || heldApparatus.liquid) && (targetApparatus.capacity || targetApparatus.liquid) && (
+              <>
+                <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '9px' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => pourLiquid(heldApparatus.id, targetApparatus.id, 25)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '1px 2px',
+                    color: '#34d399',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                  }}
+                  title={`Pour 25 mL from ${heldApparatus.name} into ${targetApparatus.name} [P]`}
+                >
+                  <kbd
+                    style={{
+                      background: 'rgba(52, 211, 153, 0.25)',
+                      color: '#6ee7b7',
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      border: '1px solid rgba(52, 211, 153, 0.4)',
+                      lineHeight: '12px',
+                    }}
+                  >
+                    P
+                  </kbd>
+                  <span>Pour 25 mL</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
-      {/* ================= INTERACTION TOAST FEEDBACK ================= */}
+      {/* ================= COMPACT HELD APPARATUS PLACEMENT INDICATOR (PROBLEM 1) ================= */}
+      {heldApparatus && placementState?.isValid && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(50% + 22px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 35,
+            pointerEvents: 'auto',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '2px 7px',
+              borderRadius: '5px',
+              background: 'rgba(6, 78, 59, 0.75)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              border: '1px solid rgba(52, 211, 153, 0.45)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+              color: '#ffffff',
+              fontSize: '11px',
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <button
+              type="button"
+              onClick={placeApparatus}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: 'transparent',
+                border: 'none',
+                padding: '0',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 500,
+              }}
+            >
+              <kbd
+                style={{
+                  background: 'rgba(52, 211, 153, 0.25)',
+                  color: '#6ee7b7',
+                  padding: '1px 4px',
+                  borderRadius: '3px',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  border: '1px solid rgba(52, 211, 153, 0.45)',
+                  lineHeight: '12px',
+                }}
+              >
+                F
+              </kbd>
+              <span>Place on {placementState.surfaceName || 'Workstation'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= COMPACT INVALID PLACEMENT WARNING (PROBLEM 2) ================= */}
+      {heldApparatus && !placementState?.isValid && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(50% + 22px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 35,
+            pointerEvents: 'none',
+            maxWidth: '300px',
+            width: 'max-content',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '2px 8px',
+              borderRadius: '5px',
+              background: 'rgba(30, 20, 20, 0.75)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              border: '1px solid rgba(248, 113, 113, 0.38)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+              color: '#fca5a5',
+              fontSize: '11px',
+              lineHeight: 1.25,
+              textAlign: 'center',
+            }}
+          >
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(239, 68, 68, 0.25)',
+                color: '#f87171',
+                padding: '1px 3px',
+                borderRadius: '3px',
+                fontSize: '10px',
+                fontWeight: 700,
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                lineHeight: '12px',
+                flexShrink: 0,
+              }}
+            >
+              ⊘
+            </span>
+            <span>
+              {placementState?.reason || 'Must be placed on a laboratory benchtop.'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ================= COMPACT INTERACTION TOAST FEEDBACK ================= */}
       {interactionNotice && (
         <div
           style={{
             position: 'absolute',
-            top: '80px',
+            top: '76px',
             left: '50%',
             transform: 'translateX(-50%)',
             pointerEvents: 'auto',
@@ -546,22 +720,24 @@ export function LabHUD() {
           }}
         >
           <div
-            className="hud-panel animate-fade-in"
+            className="animate-fade-in"
             style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              background: interactionNotice.type === 'warning' ? '#fffbeb' : '#f0fdf4',
-              border: `1.5px solid ${interactionNotice.type === 'warning' ? '#f59e0b' : '#10b981'}`,
-              color: interactionNotice.type === 'warning' ? '#92400e' : '#166534',
-              fontSize: '12px',
-              fontWeight: 600,
+              padding: '3px 10px',
+              borderRadius: '6px',
+              background: interactionNotice.type === 'warning' ? 'rgba(30, 20, 20, 0.85)' : 'rgba(6, 78, 59, 0.85)',
+              backdropFilter: 'blur(4px)',
+              border: `1px solid ${interactionNotice.type === 'warning' ? 'rgba(248, 113, 113, 0.4)' : 'rgba(52, 211, 153, 0.4)'}`,
+              color: interactionNotice.type === 'warning' ? '#fca5a5' : '#a7f3d0',
+              fontSize: '11px',
+              fontWeight: 500,
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+              gap: '6px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+              maxWidth: '360px',
             }}
           >
-            <span>{interactionNotice.type === 'warning' ? '⚠️' : '✓'}</span>
+            <span>{interactionNotice.type === 'warning' ? '⊘' : '✓'}</span>
             <span>{interactionNotice.message}</span>
             <button
               type="button"
@@ -572,8 +748,8 @@ export function LabHUD() {
                 color: 'inherit',
                 cursor: 'pointer',
                 marginLeft: '4px',
-                fontSize: '13px',
-                fontWeight: 700,
+                fontSize: '11px',
+                opacity: 0.7,
               }}
             >
               ✕
@@ -842,73 +1018,89 @@ export function LabHUD() {
               fontSize: '12px',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#64748b' }}>Current State:</span>
-              <span
-                style={{
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  background: selectedApparatus.id === heldApparatusId ? '#e0f2fe' : '#f1f5f9',
-                  color: selectedApparatus.id === heldApparatusId ? '#0284c7' : '#334155',
-                }}
-              >
-                {selectedApparatus.id === heldApparatusId ? 'Held (In Hands)' : 'Placed on Benchtop'}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#64748b' }}>Current State:</span>
+            <span
+              style={{
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 600,
+                background: selectedApparatus.id === heldApparatusId ? '#e0f2fe' : '#f1f5f9',
+                color: selectedApparatus.id === heldApparatusId ? '#0284c7' : '#334155',
+              }}
+            >
+              {selectedApparatus.id === heldApparatusId
+                ? 'Held (Carrying in hands)'
+                : selectedApparatus.currentSurface
+                  ? `Placed on ${selectedApparatus.currentSurface}`
+                  : 'Placed on Benchtop'}
+            </span>
+          </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#64748b' }}>Capacity:</span>
+              <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                {typeof selectedApparatus.capacity === 'number'
+                  ? `${selectedApparatus.capacity} mL`
+                  : (selectedApparatus.capacity || 'N/A')}
               </span>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#64748b' }}>Capacity / Rating:</span>
-              <span style={{ color: '#0f172a', fontWeight: 600 }}>{selectedApparatus.capacity}</span>
+              <span style={{ color: '#64748b' }}>Volume:</span>
+              <span style={{ color: '#0284c7', fontWeight: 600 }}>
+                {selectedApparatus.liquid?.volume ?? selectedApparatus.volume ?? 0} mL
+              </span>
             </div>
 
-            {selectedApparatus.liquid && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#64748b' }}>Contents:</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span
-                      style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: selectedApparatus.liquid.color,
-                        border: '1px solid rgba(0,0,0,0.1)',
-                        display: 'inline-block',
-                      }}
-                    />
-                    <span style={{ color: '#0f172a', fontWeight: 600 }}>
-                      {selectedApparatus.liquid.name}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Liquid Volume:</span>
-                  <span style={{ color: '#0284c7', fontWeight: 600 }}>
-                    {selectedApparatus.liquid.volume} mL / {selectedApparatus.liquid.maxVolume} mL
-                  </span>
-                </div>
-
-                {selectedApparatus.liquid.ph !== undefined && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Measured pH:</span>
-                    <span style={{ color: '#0f172a', fontWeight: 600 }}>
-                      {selectedApparatus.liquid.ph}
-                    </span>
-                  </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#64748b' }}>Contents:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {selectedApparatus.liquid?.color && (
+                  <span
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: selectedApparatus.liquid.color,
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      display: 'inline-block',
+                    }}
+                  />
                 )}
+                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                  {selectedApparatus.liquid?.name || (typeof selectedApparatus.contents === 'string' ? selectedApparatus.contents : 'Empty')}
+                </span>
+              </div>
+            </div>
 
-                {selectedApparatus.liquid.temperature !== undefined && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Temperature:</span>
-                    <span style={{ color: '#0f172a', fontWeight: 600 }}>
-                      {selectedApparatus.liquid.temperature} °C
-                    </span>
-                  </div>
-                )}
-              </>
+            {((selectedApparatus.concentration !== undefined && selectedApparatus.concentration !== null) ||
+              selectedApparatus.solution?.concentration !== undefined) && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Concentration:</span>
+                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                  {selectedApparatus.concentration ?? selectedApparatus.solution?.concentration} M
+                </span>
+              </div>
+            )}
+
+            {(selectedApparatus.liquid?.ph !== undefined || selectedApparatus.ph !== undefined) && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Measured pH:</span>
+                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                  {selectedApparatus.liquid?.ph ?? selectedApparatus.ph}
+                </span>
+              </div>
+            )}
+
+            {(selectedApparatus.liquid?.temperature !== undefined || selectedApparatus.temperature !== undefined) && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Temperature:</span>
+                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                  {selectedApparatus.liquid?.temperature ?? selectedApparatus.temperature} °C
+                </span>
+              </div>
             )}
 
             {/* Test tube rack tubes overview */}
@@ -973,6 +1165,163 @@ export function LabHUD() {
               >
                 {selectedApparatus.isIgnited ? 'Extinguish Flame' : 'Ignite Bunsen Flame'}
               </button>
+            </div>
+          )}
+
+          {/* Chemistry Action Tools (Pour, Measure, Add Reagent) */}
+          {(selectedApparatus.capacity || selectedApparatus.liquid) && (
+            <div
+              style={{
+                marginBottom: '16px',
+                background: '#f8fafc',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ color: '#475569', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Chemistry Actions
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => heatApparatus(selectedApparatus.id, 5)}
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#ea580c',
+                      background: '#ffedd5',
+                      border: '1px solid #fed7aa',
+                      padding: '2px 7px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                    title="Gently warm solution (+5 °C)"
+                  >
+                    Warm +5°C
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => measureApparatus(selectedApparatus.id)}
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#0284c7',
+                      background: '#e0f2fe',
+                      border: '1px solid #bae6fd',
+                      padding: '2px 7px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                    title="Measure pH, temperature, and volume [M]"
+                  >
+                    Measure [M]
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Pour Action (if carrying another container) */}
+              {heldApparatus && heldApparatus.id !== selectedApparatus.id && (heldApparatus.capacity || heldApparatus.liquid) && (
+                <button
+                  type="button"
+                  onClick={() => pourLiquid(heldApparatus.id, selectedApparatus.id, 25)}
+                  style={{
+                    width: '100%',
+                    padding: '7px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #34d399',
+                    background: '#ecfdf5',
+                    color: '#047857',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>Pour 25 mL from {heldApparatus.name}</span>
+                </button>
+              )}
+
+              {/* Reagent Addition Shortcuts */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => addReagent(selectedApparatus.id, 'phenolphthalein', 2)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '5px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#334155',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                  title="Add 2 drops of phenolphthalein indicator"
+                >
+                  + Indicator
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addReagent(selectedApparatus.id, 'sodium-hydroxide', 10, 0.1)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '5px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#334155',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                  title="Add 10 mL 0.1 M NaOH"
+                >
+                  + 10mL NaOH
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addReagent(selectedApparatus.id, 'hydrochloric-acid', 10, 0.1)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '5px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#334155',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                  title="Add 10 mL 0.1 M HCl"
+                >
+                  + 10mL HCl
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addReagent(selectedApparatus.id, 'water', 20)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '5px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#334155',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                  }}
+                  title="Add 20 mL deionized water"
+                >
+                  + 20mL H₂O
+                </button>
+              </div>
             </div>
           )}
 

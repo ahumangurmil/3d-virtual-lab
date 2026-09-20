@@ -5,6 +5,7 @@ import { usePlayerControls } from './usePlayerControls';
 import { resolvePlayerCollision, PLAYER_RADIUS } from './playerCollision';
 import { createInitialPlayerState } from './playerTypes';
 import { PlayerAvatar } from './PlayerAvatar';
+import { ApparatusModel } from '../components/apparatus/ApparatusModel';
 
 /**
  * Player Controller Component.
@@ -79,6 +80,7 @@ export function PlayerController({
 
   // Avatar group ref and movement ref
   const avatarGroupRef = useRef();
+  const heldApparatusFPRef = useRef();
   const visualMovement = useRef({
     isMoving: false,
     isRunning: false,
@@ -329,19 +331,67 @@ export function PlayerController({
       camera.position.lerp(desiredCamPos.current, Math.min(1.0, dt * 8.0));
       camera.lookAt(cameraTarget.current);
     }
+
+    // 7. Update First-Person Held Apparatus Position
+    if (isFirstPerson && heldApparatus && heldApparatusFPRef.current) {
+      heldApparatusFPRef.current.visible = true;
+      const camPos = camera.position;
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+      const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+
+      const isMov = visualMovement.current.isMoving;
+      const isRun = visualMovement.current.isRunning;
+      const t = state.clock.getElapsedTime();
+      const bob = isMov ? Math.sin(t * (isRun ? 13 : 8.5)) * 0.007 : Math.sin(t * 2.2) * 0.002;
+      const sway = isMov ? Math.cos(t * (isRun ? 6.5 : 4.2)) * 0.005 : 0;
+
+      const isBurette = heldApparatus.type === 'burette_50';
+      const yOffset = isBurette ? -0.26 : -0.15;
+      const forwardDist = isBurette ? 0.44 : 0.38;
+
+      heldApparatusFPRef.current.position.copy(camPos)
+        .addScaledVector(forward, forwardDist)
+        .addScaledVector(right, 0.13 + sway)
+        .addScaledVector(up, yOffset + bob);
+
+      heldApparatusFPRef.current.rotation.set(
+        cameraPitch.current * 0.4,
+        cameraYaw.current + 0.12,
+        -0.03
+      );
+    } else if (heldApparatusFPRef.current) {
+      heldApparatusFPRef.current.visible = false;
+    }
   });
 
   return (
-    <group ref={avatarGroupRef} position={[0, 0, 8.5]} rotation={[0, 0, 0]}>
-      <PlayerAvatar
-        name={playerName}
-        role={role}
-        color={color}
-        movementRef={visualMovement}
-        isLocal={true}
-        isFirstPerson={isFirstPerson}
-        heldApparatus={heldApparatus}
-      />
-    </group>
+    <>
+      <group ref={avatarGroupRef} position={[0, 0, 8.5]} rotation={[0, 0, 0]}>
+        <PlayerAvatar
+          name={playerName}
+          role={role}
+          color={color}
+          movementRef={visualMovement}
+          isLocal={true}
+          isFirstPerson={isFirstPerson}
+          heldApparatus={heldApparatus}
+        />
+      </group>
+
+      {/* First-person held apparatus viewmodel */}
+      {heldApparatus && (
+        <group ref={heldApparatusFPRef} visible={isFirstPerson}>
+          <group scale={heldApparatus.type === 'burette_50' ? 0.65 : 0.85}>
+            <ApparatusModel
+              apparatus={heldApparatus}
+              isSelected={false}
+              isHovered={false}
+            />
+          </group>
+        </group>
+      )}
+    </>
   );
 }

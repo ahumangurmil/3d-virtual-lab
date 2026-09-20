@@ -1,3 +1,5 @@
+import { createInitialSolution, applySolutionToApparatus } from '../chemistry/chemistryEngine';
+
 export const WORKSTATIONS = [
   {
     id: 'station-teacher',
@@ -127,98 +129,106 @@ function createStationApparatus(station) {
   const prefix = station.id;
 
   const items = [
-    {
-      id: `${prefix}-beaker-1`,
-      workstationId: station.id,
-      stationName: station.name,
-      type: isTeacher ? 'beaker_500' : 'beaker_250',
-      name: isTeacher ? 'Demo 500 mL Beaker' : `${station.name} Beaker`,
-      position: [wx - 0.55, 0.92, wz + 0.15],
-      rotation: [0, 0.2, 0],
-      capacity: isTeacher ? '500 mL' : '250 mL',
-      isPickable: true,
-      isHeld: false,
-      heldBy: null,
-      liquid: {
-        volume: isTeacher ? 300 : 120,
-        maxVolume: isTeacher ? 500 : 250,
-        color: '#0284c7', // Aqueous copper sulfate solution
-        name: 'Copper(II) Sulfate Solution',
-        ph: 4.5,
-        temperature: 24,
+    applySolutionToApparatus(
+      {
+        id: `${prefix}-beaker-1`,
+        workstationId: station.id,
+        stationName: station.name,
+        type: isTeacher ? 'beaker_500' : 'beaker_250',
+        name: isTeacher ? 'Demo 500 mL Beaker' : `${station.name} Beaker`,
+        position: [wx - 0.55, 0.92, wz + 0.15],
+        rotation: [0, 0.2, 0],
+        capacity: isTeacher ? 500 : 250,
+        interactable: true,
+        isPickable: true,
+        isHeld: false,
+        heldBy: null,
+        currentSurface: station.name,
+        description: 'Flat-bottomed cylindrical borosilicate glass vessel used to hold, mix, and roughly measure liquids. Features a pouring spout and graduation markings.',
+        safetyNotes: 'Check for cracks before use. Use heat-resistant tongs or gloves when warm.',
       },
-      description: 'Used to hold, mix, and roughly measure liquids. Features pouring spout and graduation lines.',
-      safetyNotes: 'Check for cracks before use. Use heat-resistant tongs or gloves when warm.',
-    },
-    {
-      id: `${prefix}-flask-1`,
-      workstationId: station.id,
-      stationName: station.name,
-      type: 'conical_flask_250',
-      name: isTeacher ? 'Demo Conical Flask (Erlenmeyer)' : `${station.name} Conical Flask`,
-      position: [wx - 0.15, 0.92, wz + 0.2],
-      rotation: [0, 0.1, 0],
-      capacity: '250 mL',
-      isPickable: true,
-      isHeld: false,
-      heldBy: null,
-      liquid: {
-        volume: 100,
-        maxVolume: 250,
-        color: '#ec4899', // Pink phenolphthalein indicator endpoint
-        name: 'Neutralized Solution (Phenolphthalein)',
-        ph: 8.3,
+      createInitialSolution({
+        chemicalId: isTeacher ? 'copper-sulfate' : 'hydrochloric-acid',
+        volume: isTeacher ? 300 : 100,
+        concentration: isTeacher ? 0.5 : 0.1,
         temperature: 24,
+      })
+    ),
+    applySolutionToApparatus(
+      {
+        id: `${prefix}-flask-1`,
+        workstationId: station.id,
+        stationName: station.name,
+        type: 'conical_flask_250',
+        name: isTeacher ? 'Demo Conical Flask (Erlenmeyer)' : `${station.name} Conical Flask`,
+        position: [wx - 0.15, 0.92, wz + 0.2],
+        rotation: [0, 0.1, 0],
+        capacity: 250,
+        interactable: true,
+        isPickable: true,
+        isHeld: false,
+        heldBy: null,
+        currentSurface: station.name,
+        description: 'Cone-shaped flask with a flat base and narrow neck. Specially designed for acid-base titrations; the tapered neck allows vigorous swirling without spilling.',
+        safetyNotes: 'Ensure neck stays clear. Do not seal tightly with stopper if heating.',
       },
-      description: 'Conical shape allows liquids to be swirled thoroughly during titrations without risk of spilling.',
-      safetyNotes: 'Ensure neck stays clear. Do not seal tightly with stopper if heating.',
-    },
-    {
-      id: `${prefix}-burette-1`,
-      workstationId: station.id,
-      stationName: station.name,
-      type: 'burette_50',
-      name: isTeacher ? 'Demo 50 mL Titration Burette' : `${station.name} Titration Burette`,
-      position: [wx - 0.95, 0.92, wz - 0.05],
-      rotation: [0, 0, 0],
-      capacity: '50 mL (0.1 mL graduations)',
-      isPickable: true,
-      isHeld: false,
-      heldBy: null,
-      liquid: {
+      createInitialSolution({
+        chemicalId: isTeacher ? 'water' : 'hydrochloric-acid',
+        volume: isTeacher ? 120 : 50,
+        concentration: isTeacher ? 55.5 : 0.1,
+        temperature: 24,
+      })
+    ),
+    applySolutionToApparatus(
+      {
+        id: `${prefix}-burette-1`,
+        workstationId: station.id,
+        stationName: station.name,
+        type: 'burette_50',
+        name: isTeacher ? 'Demo 50 mL Titration Burette' : `${station.name} Titration Burette`,
+        position: [wx - 0.95, 0.92, wz - 0.05],
+        rotation: [0, 0, 0],
+        capacity: 50,
+        interactable: true,
+        isPickable: true,
+        isHeld: false,
+        heldBy: null,
+        currentSurface: station.name,
+        description: 'High-precision volumetric glassware mounted on a retort stand for quantitative volumetric titrations. Delivers titrant drop by drop through a PTFE stopcock valve.',
+        safetyNotes: 'Ensure stopcock is firmly seated. Rinse with titrant before filling to prevent dilution errors.',
+      },
+      createInitialSolution({
+        chemicalId: 'sodium-hydroxide',
         volume: 38,
-        maxVolume: 50,
-        color: '#38bdf8',
-        name: '0.1 M Standard NaOH Solution',
-        ph: 13.0,
+        concentration: 0.1,
         temperature: 24,
+      })
+    ),
+    applySolutionToApparatus(
+      {
+        id: `${prefix}-test-tube-1`,
+        workstationId: station.id,
+        stationName: station.name,
+        type: 'test_tube',
+        name: isTeacher ? 'Demo Practical Test Tube' : `${station.name} Test Tube`,
+        position: [wx + 0.25, 0.92, wz + 0.22],
+        rotation: [0, 0, 0],
+        capacity: 25,
+        interactable: true,
+        isPickable: true,
+        isHeld: false,
+        heldBy: null,
+        currentSurface: station.name,
+        description: 'Slender borosilicate glass cylinder with rounded base and flared lip, held in a stable bench stand.',
+        safetyNotes: 'Never heat a test tube while pointed at anyone. Use test tube holder when heating over flame.',
       },
-      description: 'High-precision volumetric glassware mounted on retort stand for titrations. Delivers liquid drop by drop with PTFE stopcock valve.',
-      safetyNotes: 'Ensure stopcock is firmly seated. Rinse with titrant before filling to prevent dilution errors.',
-    },
-    {
-      id: `${prefix}-test-tube-1`,
-      workstationId: station.id,
-      stationName: station.name,
-      type: 'test_tube',
-      name: isTeacher ? 'Demo Practical Test Tube' : `${station.name} Test Tube`,
-      position: [wx + 0.25, 0.92, wz + 0.22],
-      rotation: [0, 0, 0],
-      capacity: '25 mL (16 x 150 mm)',
-      isPickable: true,
-      isHeld: false,
-      heldBy: null,
-      liquid: {
+      createInitialSolution({
+        chemicalId: 'nickel-sulfate',
         volume: 15,
-        maxVolume: 25,
-        color: '#16a34a', // Nickel sulfate green
-        name: 'Nickel(II) Sulfate Solution',
-        ph: 6.2,
+        concentration: 0.5,
         temperature: 24,
-      },
-      description: 'Borosilicate glass tube with flared rim, rounded bottom, and support stand. Ideal for qualitative salt analysis and color tests.',
-      safetyNotes: 'Never heat a test tube while pointed at anyone. Use test tube holder when heating over flame.',
-    },
+      })
+    ),
     {
       id: `${prefix}-rack-1`,
       workstationId: station.id,
@@ -228,9 +238,11 @@ function createStationApparatus(station) {
       position: [wx + 0.78, 0.92, wz - 0.05],
       rotation: [0, -0.15, 0],
       capacity: 'Holds 6 test tubes',
+      interactable: true,
       isPickable: true,
       isHeld: false,
       heldBy: null,
+      currentSurface: station.name,
       liquid: null,
       tubes: [
         { id: `${prefix}-tt-1`, label: 'T1', color: '#0284c7', volumeRatio: 0.6, name: 'CuSO₄ (Blue)' },
@@ -252,9 +264,11 @@ function createStationApparatus(station) {
       position: [wx - 0.05, 0.92, wz - 0.35],
       rotation: [0, 0.5, 0],
       capacity: 'Adjustable gas flame source',
+      interactable: true,
       isPickable: false,
       isHeld: false,
       heldBy: null,
+      currentSurface: station.name,
       liquid: null,
       isIgnited: false,
       description: 'Provides clean, adjustable flame for boiling solutions, sterilizing wire loops, and flame tests.',
@@ -263,26 +277,33 @@ function createStationApparatus(station) {
   ];
 
   if (isTeacher) {
-    items.push({
-      id: `${prefix}-beaker-2`,
-      workstationId: station.id,
-      stationName: station.name,
-      type: 'beaker_500',
-      name: 'Teacher 500 mL Reagent Beaker',
-      position: [wx - 1.15, 0.92, wz - 0.1],
-      rotation: [0, -0.4, 0],
-      capacity: '500 mL',
-      liquid: {
-        volume: 320,
-        maxVolume: 500,
-        color: '#f59e0b',
-        name: 'Iron(III) Solution (Dilute)',
-        ph: 3.2,
-        temperature: 23,
-      },
-      description: 'Used for teacher preparation and holding larger solution volumes. Wide base provides stability.',
-      safetyNotes: 'Always keep away from bench edges and carry with two hands when filled.',
-    });
+    items.push(
+      applySolutionToApparatus(
+        {
+          id: `${prefix}-beaker-2`,
+          workstationId: station.id,
+          stationName: station.name,
+          type: 'beaker_500',
+          name: 'Teacher 500 mL Reagent Beaker',
+          position: [wx - 1.15, 0.92, wz - 0.1],
+          rotation: [0, -0.4, 0],
+          capacity: 500,
+          interactable: true,
+          isPickable: true,
+          isHeld: false,
+          heldBy: null,
+          currentSurface: station.name,
+          description: 'Used for teacher preparation and holding larger solution volumes. Wide base provides stability.',
+          safetyNotes: 'Always keep away from bench edges and carry with two hands when filled.',
+        },
+        createInitialSolution({
+          chemicalId: 'iron-chloride',
+          volume: 320,
+          concentration: 0.2,
+          temperature: 23,
+        })
+      )
+    );
   }
 
   return items;

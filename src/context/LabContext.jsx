@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useMemo, useCallback, useRef } from 'react';
 import { INITIAL_APPARATUS, CAMERA_PRESETS, WORKSTATIONS } from './labConstants';
 import { DEFAULT_PLAYER_NAME, createInitialPlayerState } from '../player/playerTypes';
+import { CHEMISTRY_ACTION_TYPES, executeChemistryAction } from '../chemistry/actionSystem';
 
 export { CAMERA_PRESETS, WORKSTATIONS };
 
@@ -78,7 +79,11 @@ export function LabProvider({ children }) {
     }
 
     setApparatusList((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, isHeld: true, heldBy: 'player' } : a))
+      prev.map((a) =>
+        a.id === id
+          ? { ...a, isHeld: true, heldBy: 'player', currentSurface: 'In Hands (Carried)' }
+          : a
+      )
     );
     setHeldApparatusId(id);
     setSelectedId(id);
@@ -115,6 +120,7 @@ export function LabProvider({ children }) {
               isHeld: false,
               heldBy: null,
               position: snappedPosition,
+              currentSurface: surfaceName,
               workstationId: surfaceId || a.workstationId,
             }
           : a
@@ -131,14 +137,18 @@ export function LabProvider({ children }) {
 
   const selectStation = useCallback((stationId) => {
     setActiveStationId(stationId);
-    setControlMode('overview');
-    if (stationId === 'station-teacher') {
-      setCameraPreset('teacher');
-    } else if (stationId === 'station-1') {
-      setCameraPreset('workbench');
-    } else {
-      setCameraPreset(stationId);
-    }
+    setControlMode((currentMode) => {
+      if (currentMode === 'overview') {
+        if (stationId === 'station-teacher') {
+          setCameraPreset('teacher');
+        } else if (stationId === 'station-1') {
+          setCameraPreset('workbench');
+        } else {
+          setCameraPreset(stationId);
+        }
+      }
+      return currentMode;
+    });
   }, []);
 
   const teleportPlayerTo = useCallback((x, z, rotY = Math.PI) => {
@@ -165,6 +175,103 @@ export function LabProvider({ children }) {
 
   const handlePlayerStateUpdate = useCallback((latestState) => {
     playerStateRef.current = latestState;
+  }, []);
+
+  // ================= CHEMISTRY ACTION DISPATCHERS =================
+  const pourLiquid = useCallback((sourceId = null, destId = null, amount = 25) => {
+    const src = sourceId || heldApparatusId;
+    const dst = destId || targetApparatusId;
+
+    if (!src || !dst) {
+      setInteractionNotice({
+        message: 'Pour action requires both a source container and a target container.',
+        type: 'warning',
+        timestamp: Date.now(),
+      });
+      return false;
+    }
+
+    let success = false;
+    setApparatusList((prevList) => {
+      const outcome = executeChemistryAction(
+        CHEMISTRY_ACTION_TYPES.POUR,
+        { sourceId: src, destId: dst, amount },
+        prevList
+      );
+      success = outcome.success;
+      setInteractionNotice({
+        message: outcome.message,
+        type: outcome.success ? 'success' : 'warning',
+        timestamp: Date.now(),
+      });
+      return outcome.success ? outcome.updatedApparatusList : prevList;
+    });
+    return success;
+  }, [heldApparatusId, targetApparatusId]);
+
+  const mixContainers = useCallback((containerAId, containerBId, amount = 25) => {
+    return pourLiquid(containerAId, containerBId, amount);
+  }, [pourLiquid]);
+
+  const addReagent = useCallback((targetId, chemicalId, amount = 25, concentration = null) => {
+    if (!targetId || !chemicalId) return false;
+
+    let success = false;
+    setApparatusList((prevList) => {
+      const outcome = executeChemistryAction(
+        CHEMISTRY_ACTION_TYPES.ADD_REAGENT,
+        { targetId, chemicalId, amount, concentration },
+        prevList
+      );
+      success = outcome.success;
+      setInteractionNotice({
+        message: outcome.message,
+        type: outcome.success ? 'success' : 'warning',
+        timestamp: Date.now(),
+      });
+      return outcome.success ? outcome.updatedApparatusList : prevList;
+    });
+    return success;
+  }, []);
+
+  const measureApparatus = useCallback((targetId) => {
+    if (!targetId) return null;
+    let measurement = null;
+    setApparatusList((prevList) => {
+      const outcome = executeChemistryAction(
+        CHEMISTRY_ACTION_TYPES.MEASURE,
+        { targetId },
+        prevList
+      );
+      measurement = outcome.result;
+      setInteractionNotice({
+        message: outcome.message,
+        type: 'info',
+        timestamp: Date.now(),
+      });
+      return prevList;
+    });
+    return measurement;
+  }, []);
+
+  const heatApparatus = useCallback((targetId, deltaTemp = 5) => {
+    if (!targetId) return false;
+    let success = false;
+    setApparatusList((prevList) => {
+      const outcome = executeChemistryAction(
+        CHEMISTRY_ACTION_TYPES.HEAT,
+        { targetId, deltaTemp },
+        prevList
+      );
+      success = outcome.success;
+      setInteractionNotice({
+        message: outcome.message,
+        type: outcome.success ? 'success' : 'warning',
+        timestamp: Date.now(),
+      });
+      return outcome.success ? outcome.updatedApparatusList : prevList;
+    });
+    return success;
   }, []);
 
   const value = useMemo(
@@ -197,6 +304,12 @@ export function LabProvider({ children }) {
       placeApparatus,
       interactionNotice,
       setInteractionNotice,
+      // Chemistry Action System
+      pourLiquid,
+      mixContainers,
+      addReagent,
+      measureApparatus,
+      heatApparatus,
       setControlMode,
       setPlayerName,
       selectStation,
@@ -230,6 +343,11 @@ export function LabProvider({ children }) {
       interactionNotice,
       pickUpApparatus,
       placeApparatus,
+      pourLiquid,
+      mixContainers,
+      addReagent,
+      measureApparatus,
+      heatApparatus,
       selectStation,
       selectApparatus,
       hoverApparatus,

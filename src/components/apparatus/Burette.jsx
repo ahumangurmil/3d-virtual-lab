@@ -33,7 +33,7 @@ export function Burette({
 
   // Liquid level (0 mL is at the top, 50 mL is at the bottom in a real burette!)
   const maxVol = liquid?.maxVolume || 50;
-  const currentVol = liquid?.volume !== undefined ? liquid.volume : 35;
+  const currentVol = liquid?.volume !== undefined ? liquid.volume : 0;
   const fillRatio = Math.min(Math.max(currentVol / maxVol, 0), 1);
   const liquidHeight = buretteLength * fillRatio;
   const liquidColor = liquid?.color || '#38bdf8';

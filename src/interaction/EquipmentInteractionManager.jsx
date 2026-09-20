@@ -22,13 +22,17 @@ export function EquipmentInteractionManager() {
     heldApparatusId,
     targetApparatusId,
     setTargetApparatusId,
+    selectedId,
     placementState,
     setPlacementState,
     pickUpApparatus,
     placeApparatus,
     selectApparatus,
+    pourLiquid,
+    measureApparatus,
     playerStateRef,
     controlMode,
+    povMode,
   } = useLab();
 
   // Bench height plane for mouse raycasting when placing apparatus
@@ -56,9 +60,32 @@ export function EquipmentInteractionManager() {
         }
       }
 
-      // [E] Key: Inspect / select targeted apparatus
+      // [P] Key: Pour liquid from held container into targeted container
+      if (e.code === 'KeyP') {
+        if (heldApparatusId && targetApparatusId) {
+          pourLiquid(heldApparatusId, targetApparatusId, 25);
+        } else if (selectedId && targetApparatusId && selectedId !== targetApparatusId) {
+          pourLiquid(selectedId, targetApparatusId, 25);
+        }
+      }
+
+      // [M] Key: Measure targeted or selected apparatus
+      if (e.code === 'KeyM') {
+        const toMeasure = selectedId || targetApparatusId || heldApparatusId;
+        if (toMeasure) {
+          measureApparatus(toMeasure);
+        }
+      }
+
+      // [E] Key: Open / toggle info panel for targeted apparatus
       if (e.code === 'KeyE') {
-        if (targetApparatusId) {
+        if (selectedId) {
+          if (targetApparatusId && targetApparatusId !== selectedId) {
+            selectApparatus(targetApparatusId);
+          } else {
+            selectApparatus(null);
+          }
+        } else if (targetApparatusId) {
           selectApparatus(targetApparatusId);
         }
       }
@@ -74,15 +101,18 @@ export function EquipmentInteractionManager() {
   }, [
     heldApparatusId,
     targetApparatusId,
+    selectedId,
     apparatusList,
     pickUpApparatus,
     placeApparatus,
     selectApparatus,
+    pourLiquid,
+    measureApparatus,
   ]);
 
   // Frame loop: Continuous detection & placement raycasting
   useFrame(() => {
-    // Only run proximity detection when in 3rd-person avatar mode
+    // Only run proximity detection when in avatar mode
     if (controlMode !== 'avatar') return;
 
     const pState = playerStateRef?.current;
@@ -91,23 +121,33 @@ export function EquipmentInteractionManager() {
     const [px, , pz] = pState.position;
     const rotY = pState.rotation[1] || 0;
 
-    // Avatar forward direction in world space (front is -Z in local avatar space)
-    // with rotY = PI (facing front), forward vector is [0, 0, -1]
-    const forwardX = Math.sin(rotY);
-    const forwardZ = Math.cos(rotY);
+    // Get camera look direction in world space
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+
+    // Avatar forward direction in world space (-Z is front when rotY = 0)
+    const avatarForwardX = -Math.sin(rotY);
+    const avatarForwardZ = -Math.cos(rotY);
+
+    const isFirstPerson = povMode === 'first-person';
+    const forwardX = isFirstPerson ? camDir.x : avatarForwardX;
+    const forwardZ = isFirstPerson ? camDir.z : avatarForwardZ;
+    const fMag = Math.hypot(forwardX, forwardZ) || 1;
+    const normForwardX = forwardX / fMag;
+    const normForwardZ = forwardZ / fMag;
 
     // ================= 1. HELD APPARATUS PLACEMENT TARGETING =================
     if (heldApparatusId && heldApparatus) {
-      let targetPlaceX = px + forwardX * 0.95;
+      let targetPlaceX = px + normForwardX * 0.95;
       const targetPlaceY = 0.92;
-      let targetPlaceZ = pz + forwardZ * 0.95;
+      let targetPlaceZ = pz + normForwardZ * 0.95;
 
-      // If user is hovering mouse over canvas, check if raycast hits benchtop within player reach (~2.4m)
-      raycaster.setFromCamera(mouse, camera);
+      // In first-person or mouse mode, check if camera raycast hits benchtop within player reach (~2.5m)
+      raycaster.setFromCamera(isFirstPerson ? new THREE.Vector2(0, 0) : mouse, camera);
       const hit = raycaster.ray.intersectPlane(benchPlane.current, mouseIntersection.current);
       if (hit) {
-        const distFromPlayerSq = (hit.x - px) ** 2 + (hit.z - pz) ** 2;
-        if (distFromPlayerSq <= 2.4 ** 2) {
+        const distFromPlayer = Math.hypot(hit.x - px, hit.z - pz);
+        if (distFromPlayer <= 2.5) {
           targetPlaceX = hit.x;
           targetPlaceZ = hit.z;
         }
@@ -121,33 +161,43 @@ export function EquipmentInteractionManager() {
       );
 
       setPlacementState(validation);
-      return;
+    } else if (placementState !== null) {
+      setPlacementState(null);
     }
 
     // ================= 2. PROXIMITY & LINE-OF-SIGHT APPARATUS DETECTION =================
-    const MAX_INTERACTION_DIST = 2.4;
+    const MAX_INTERACTION_DIST = 2.5;
     let closestItem = null;
     let highestScore = -Infinity;
 
     for (const item of apparatusList) {
-      if (item.isHeld) continue;
+      if (item.isHeld || item.id === heldApparatusId) continue;
 
-      const [ix, , iz] = item.position;
+      const [ix, iy, iz] = item.position;
       const dx = ix - px;
       const dz = iz - pz;
       const dist = Math.hypot(dx, dz);
 
       if (dist > MAX_INTERACTION_DIST) continue;
 
-      // Angle calculation between avatar facing vector and vector to apparatus
+      // 1. Line-of-sight check from camera
+      const toCamVec = new THREE.Vector3(
+        ix - camera.position.x,
+        iy - camera.position.y,
+        iz - camera.position.z
+      ).normalize();
+      const camDot = camDir.dot(toCamVec);
+
+      // 2. Forward direction check from avatar
       const dirX = dx / (dist || 1);
       const dirZ = dz / (dist || 1);
-      const dot = forwardX * dirX + forwardZ * dirZ; // 1.0 = directly in front, -1.0 = behind
+      const avatarDot = normForwardX * dirX + normForwardZ * dirZ;
 
-      // Must be roughly in front of avatar (dot > 0.15) or very close (dist < 1.1)
-      if (dot > 0.15 || dist < 1.1) {
-        // Score favors items directly in line of sight and closer to the student
-        const score = dot * 2.0 - dist;
+      const effectiveDot = isFirstPerson ? camDot : Math.max(camDot, avatarDot);
+
+      // Must be in line of sight or very close
+      if (effectiveDot > 0.25 || dist < 1.0) {
+        const score = effectiveDot * 3.0 - dist;
         if (score > highestScore) {
           highestScore = score;
           closestItem = item;

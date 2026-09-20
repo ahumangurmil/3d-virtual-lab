@@ -14,7 +14,6 @@ export function LabCanvas() {
   const {
     workstations,
     activeStationId,
-    selectStation,
     apparatusList,
     selectedId,
     hoveredId,
@@ -121,7 +120,6 @@ export function LabCanvas() {
               height={ws.height}
               isTeacher={ws.type === 'teacher'}
               isSelected={activeStationId === ws.id}
-              onSelectStation={selectStation}
             />
           ))}
         </group>

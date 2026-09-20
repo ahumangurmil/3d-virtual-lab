@@ -1,12 +1,10 @@
 import { useState, useRef } from 'react';
-import { Html } from '@react-three/drei';
 
 /**
  * Reusable Interactive Apparatus Wrapper.
  * Encapsulates:
  * - Tabletop positioning & rotation
  * - Subtle hover / target ground highlight ring
- * - Compact 3D interaction prompt ([E] Inspect, [F] Pick Up)
  * - Click & pointer handling for mouse and touch interactions
  *
  * Separates interaction presentation from the physical apparatus 3D model.
@@ -17,9 +15,7 @@ export function InteractiveApparatus({
   isSelected = false,
   isHovered = false,
   isHeld = false,
-  canPickUp = true,
   onSelect,
-  onPickUp,
   onHover,
   children,
 }) {
@@ -83,117 +79,6 @@ export function InteractiveApparatus({
 
       {/* ================= 2. 3D VISUAL MODEL (CHILD) ================= */}
       {children}
-
-      {/* ================= 3. FLOATING 3D INTERACTION PROMPT ================= */}
-      {/* Appears when the player approaches or looks directly at this apparatus */}
-      {isTargeted && !isSelected && (
-        <Html
-          position={[0, (apparatus.height || 0.22) + 0.06, 0]}
-          center
-          distanceFactor={7.5}
-          zIndexRange={[80, 0]}
-          style={{ pointerEvents: 'auto', userSelect: 'none' }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: 'rgba(15, 23, 42, 0.88)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              padding: '3px 8px',
-              borderRadius: '8px',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-              color: '#ffffff',
-              fontSize: '10px',
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-              transform: 'translate3d(0, 0, 0)',
-            }}
-          >
-            {/* Action 1: Inspect */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onSelect) onSelect(apparatus.id);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                background: 'transparent',
-                border: 'none',
-                color: '#f8fafc',
-                cursor: 'pointer',
-                padding: '2px 4px',
-                borderRadius: '4px',
-                fontSize: '10px',
-                fontWeight: 600,
-              }}
-            >
-              <span
-                style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  color: '#ffffff',
-                  padding: '1px 4px',
-                  borderRadius: '3px',
-                  fontSize: '9px',
-                  fontWeight: 700,
-                }}
-              >
-                E
-              </span>
-              <span>Inspect</span>
-            </button>
-
-            {/* Separator */}
-            {canPickUp && (
-              <span style={{ color: '#475569', fontSize: '10px' }}>•</span>
-            )}
-
-            {/* Action 2: Pick Up */}
-            {canPickUp && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onPickUp) onPickUp(apparatus.id);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#38bdf8',
-                  cursor: 'pointer',
-                  padding: '2px 4px',
-                  borderRadius: '4px',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                }}
-              >
-                <span
-                  style={{
-                    background: 'rgba(56, 189, 248, 0.25)',
-                    color: '#38bdf8',
-                    padding: '1px 4px',
-                    borderRadius: '3px',
-                    fontSize: '9px',
-                    fontWeight: 700,
-                  }}
-                >
-                  F
-                </span>
-                <span>Pick Up</span>
-              </button>
-            )}
-          </div>
-        </Html>
-      )}
     </group>
   );
 }

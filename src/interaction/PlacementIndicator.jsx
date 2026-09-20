@@ -1,12 +1,12 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 
 /**
  * 3D Placement Indicator & Ghost Hologram.
- * Gives immediate, crisp visual feedback when carrying an apparatus:
- * - Emerald Green (#10b981) for valid benchtops with prompt "[F] Place on Bench"
- * - Rose Red (#f43f5e) for invalid areas (floor, walls, air, or overlapping equipment)
+ * Gives immediate, crisp visual feedback on the benchtop surface:
+ * - Emerald Green (#10b981) ring/disc for valid benchtops
+ * - Rose Red (#f43f5e) ring/disc for invalid areas
+ * (Screen-space prompts are handled compactly in the 2D HUD)
  */
 export function PlacementIndicator({ placementState, heldApparatus }) {
   const pulseRef = useRef();
@@ -24,7 +24,7 @@ export function PlacementIndicator({ placementState, heldApparatus }) {
     return null;
   }
 
-  const { isValid, snappedPosition, surfaceName, reason } = placementState;
+  const { isValid, snappedPosition } = placementState;
   const [px, py, pz] = snappedPosition || [0, 0, 0];
   const accentColor = isValid ? '#10b981' : '#f43f5e';
 
@@ -75,75 +75,6 @@ export function PlacementIndicator({ placementState, heldApparatus }) {
           </mesh>
         </group>
       )}
-
-      {/* ================= 3. FLOATING STATUS BADGE ================= */}
-      <Html
-        position={[0, 0.22, 0]}
-        center
-        distanceFactor={8}
-        zIndexRange={[90, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '3px',
-            transform: 'translate3d(0, 0, 0)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: isValid ? 'rgba(6, 78, 59, 0.92)' : 'rgba(136, 19, 55, 0.92)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              border: `1px solid ${accentColor}`,
-              borderRadius: '8px',
-              padding: '4px 10px',
-              color: '#ffffff',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
-              fontSize: '11px',
-              fontWeight: 600,
-            }}
-          >
-            {/* Status icon dot */}
-            <span
-              style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                backgroundColor: accentColor,
-                boxShadow: `0 0 6px ${accentColor}`,
-                display: 'inline-block',
-              }}
-            />
-
-            {isValid ? (
-              <>
-                <span
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.22)',
-                    padding: '1px 5px',
-                    borderRadius: '4px',
-                    fontWeight: 700,
-                    fontSize: '10px',
-                  }}
-                >
-                  F
-                </span>
-                <span>Place on {surfaceName}</span>
-              </>
-            ) : (
-              <span>{reason || 'Invalid Placement Surface'}</span>
-            )}
-          </div>
-        </div>
-      </Html>
     </group>
   );
 }
