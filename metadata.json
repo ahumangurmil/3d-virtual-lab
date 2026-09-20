@@ -1,6 +1,6 @@
 {
   "name": "3D Virtual Lab",
-  "description": "3D Virtual Lab web application",
+  "description": "Virtual Chemistry Classroom with scalable workstations for Class 11-12 practicals",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

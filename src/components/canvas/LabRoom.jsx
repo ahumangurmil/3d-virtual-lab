@@ -1,312 +1,322 @@
+import * as THREE from 'three';
+import { EquipmentStorage } from './EquipmentStorage';
+
+/**
+ * Scalable Virtual Chemistry Classroom Environment (22m x 24m).
+ * Designed for multiplayer virtual classrooms (Class 11-12 practicals).
+ * Features:
+ * - High-capacity room with generous avatar walking paths
+ * - Clear central arterial walkway and cross-aisles
+ * - Front teaching wall with large whiteboard, periodic table, and safety posters
+ * - Natural daylight windows along right wall
+ * - Full modular storage, fume hood, glassware, and emergency safety zones
+ */
 export function LabRoom() {
-  const benchWidth = 3.2;
-  const benchDepth = 1.4;
-  const benchHeight = 0.9;
-  const topThickness = 0.04;
+  const roomWidth = 22;
+  const roomDepth = 24;
+  const wallHeight = 4.8;
 
   return (
-    <group>
-      {/* ================= FLOOR ================= */}
-      {/* Light, clean educational laboratory floor */}
+    <group name="classroom-room-environment">
+      {/* ==================================================================== */}
+      {/* FLOOR & WALKING PATH DEMARCATIONS                                    */}
+      {/* ==================================================================== */}
+      {/* 1. Base Laboratory Floor (Clean high-grade chemical-resistant tiles) */}
       <mesh
         position={[0, 0, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
         receiveShadow
       >
-        <planeGeometry args={[14, 14]} />
+        <planeGeometry args={[roomWidth, roomDepth]} />
         <meshStandardMaterial
           color="#dbe3eb"
           roughness={0.4}
-          metalness={0.05}
+          metalness={0.04}
         />
       </mesh>
 
       {/* Floor Tile Grid Seams */}
       <gridHelper
-        args={[14, 14, '#94a3b8', '#cbd5e1']}
+        args={[24, 24, '#94a3b8', '#cbd5e1']}
         position={[0, 0.001, 0]}
       />
 
-      {/* ================= WALLS ================= */}
-      {/* Back Wall - Soft Neutral Tone */}
-      <mesh position={[0, 2.5, -4.5]} receiveShadow>
-        <planeGeometry args={[14, 5.0]} />
-        <meshStandardMaterial color="#eef2f6" roughness={0.9} />
-      </mesh>
-
-      {/* Back Wall Ceramic White Tile Splashback */}
-      <mesh position={[0, 1.3, -4.48]} receiveShadow>
-        <planeGeometry args={[14, 2.4]} />
+      {/* 2. Central Arterial Walkway (Width: 3.2m, from teacher zone to rear door) */}
+      <mesh
+        position={[0, 0.0015, 1.0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[3.2, 21.0]} />
         <meshStandardMaterial
-          color="#f8fafc"
-          roughness={0.25}
+          color="#f1f5f9"
+          roughness={0.35}
           metalness={0.02}
         />
       </mesh>
 
-      {/* Subtle Teal Accent Tile Border */}
-      <mesh position={[0, 2.52, -4.47]}>
-        <planeGeometry args={[14, 0.05]} />
-        <meshStandardMaterial color="#0d9488" roughness={0.3} />
+      {/* Walkway Subtle Guide Border Lines (Left and Right of central walkway) */}
+      <mesh position={[-1.6, 0.002, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.06, 21.0]} />
+        <meshBasicMaterial color="#94a3b8" />
+      </mesh>
+      <mesh position={[1.6, 0.002, 1.0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.06, 21.0]} />
+        <meshBasicMaterial color="#94a3b8" />
       </mesh>
 
-      {/* Left Wall */}
-      <mesh position={[-7, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-        <planeGeometry args={[14, 5.0]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.9} />
+      {/* 3. Front Presentation Cross-Aisle (Width: 3.0m, connecting sides) */}
+      <mesh
+        position={[0, 0.0016, -5.6]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[19.0, 2.6]} />
+        <meshStandardMaterial color="#eef2f6" roughness={0.38} />
       </mesh>
 
-      {/* Right Wall */}
-      <mesh position={[7, 2.5, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
-        <planeGeometry args={[14, 5.0]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.9} />
+      {/* 4. Rear Entry & Circulation Area */}
+      <mesh
+        position={[0, 0.0016, 9.5]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[19.0, 4.0]} />
+        <meshStandardMaterial color="#eef2f6" roughness={0.38} />
       </mesh>
 
-      {/* Clean White Ceiling */}
-      <mesh position={[0, 5.0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[14, 14]} />
+      {/* ==================================================================== */}
+      {/* WALLS                                                                */}
+      {/* ==================================================================== */}
+      {/* Front Teaching Wall (z = -12) */}
+      <group position={[0, wallHeight / 2, -roomDepth / 2]}>
+        {/* Base Wall Surface */}
+        <mesh receiveShadow>
+          <planeGeometry args={[roomWidth, wallHeight]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.9} />
+        </mesh>
+        {/* Lower Ceramic Tile Splashback & Protective Dado (0 to 2.4m) */}
+        <mesh position={[0, -wallHeight / 2 + 1.2, 0.01]} receiveShadow>
+          <planeGeometry args={[roomWidth, 2.4]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.25} metalness={0.02} />
+        </mesh>
+        {/* Decorative Teal Dado Trim */}
+        <mesh position={[0, -wallHeight / 2 + 2.42, 0.015]}>
+          <planeGeometry args={[roomWidth, 0.04]} />
+          <meshBasicMaterial color="#0d9488" />
+        </mesh>
+      </group>
+
+      {/* Rear Entrance Wall (z = +12) */}
+      <group position={[0, wallHeight / 2, roomDepth / 2]} rotation={[0, Math.PI, 0]}>
+        <mesh receiveShadow>
+          <planeGeometry args={[roomWidth, wallHeight]} />
+          <meshStandardMaterial color="#f1f5f9" roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -wallHeight / 2 + 1.2, 0.01]} receiveShadow>
+          <planeGeometry args={[roomWidth, 2.4]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.3} />
+        </mesh>
+        <mesh position={[0, -wallHeight / 2 + 2.42, 0.015]}>
+          <planeGeometry args={[roomWidth, 0.04]} />
+          <meshBasicMaterial color="#0d9488" />
+        </mesh>
+      </group>
+
+      {/* Left Wall: Glassware, Dispensary & Emergency (x = -11) */}
+      <group position={[-roomWidth / 2, wallHeight / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <mesh receiveShadow>
+          <planeGeometry args={[roomDepth, wallHeight]} />
+          <meshStandardMaterial color="#eef2f6" roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -wallHeight / 2 + 1.2, 0.01]} receiveShadow>
+          <planeGeometry args={[roomDepth, 2.4]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.25} />
+        </mesh>
+        <mesh position={[0, -wallHeight / 2 + 2.42, 0.015]}>
+          <planeGeometry args={[roomDepth, 0.04]} />
+          <meshBasicMaterial color="#0d9488" />
+        </mesh>
+      </group>
+
+      {/* Right Wall: Daylight Windows & Analytical Balances (x = +11) */}
+      <group position={[roomWidth / 2, wallHeight / 2, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <mesh receiveShadow>
+          <planeGeometry args={[roomDepth, wallHeight]} />
+          <meshStandardMaterial color="#eef2f6" roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -wallHeight / 2 + 1.2, 0.01]} receiveShadow>
+          <planeGeometry args={[roomDepth, 2.4]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.25} />
+        </mesh>
+        <mesh position={[0, -wallHeight / 2 + 2.42, 0.015]}>
+          <planeGeometry args={[roomDepth, 0.04]} />
+          <meshBasicMaterial color="#0d9488" />
+        </mesh>
+
+        {/* 4 Large Classroom Windows (diffused daylight) */}
+        {[-7.5, -2.5, 2.5, 7.5].map((wz, wIdx) => (
+          <group key={wIdx} position={[wz, 0.5, 0.02]}>
+            {/* Window Outer Frame */}
+            <mesh>
+              <boxGeometry args={[2.6, 2.0, 0.04]} />
+              <meshStandardMaterial color="#cbd5e1" metalness={0.7} roughness={0.3} />
+            </mesh>
+            {/* Translucent Window Glass Pane */}
+            <mesh position={[0, 0, 0.01]}>
+              <planeGeometry args={[2.4, 1.8]} />
+              <meshPhysicalMaterial
+                color="#e0f2fe"
+                roughness={0.1}
+                transmission={0.9}
+                ior={1.48}
+                transparent
+                opacity={0.65}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+            {/* Window Sill */}
+            <mesh position={[0, -0.98, 0.06]}>
+              <boxGeometry args={[2.7, 0.06, 0.16]} />
+              <meshStandardMaterial color="#f8fafc" roughness={0.2} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+
+      {/* Clean White Ceiling (y = 4.8m) */}
+      <mesh
+        position={[0, wallHeight, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[roomWidth, roomDepth]} />
         <meshStandardMaterial color="#f8fafc" roughness={0.95} />
       </mesh>
 
-      {/* ================= LABORATORY WORKBENCH ================= */}
-      <group position={[0, 0, 0]}>
-        {/* Light Chemical-Resistant Countertop (Corian / Modern Epoxy) */}
-        <mesh
-          position={[0, benchHeight + topThickness / 2, 0]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[benchWidth, topThickness, benchDepth]} />
-          <meshStandardMaterial
-            color="#e2e8f0"
-            roughness={0.28}
-            metalness={0.08}
-          />
-        </mesh>
-
-        {/* Countertop Soft Slate Edge Trim */}
-        <mesh position={[0, benchHeight + topThickness / 2, benchDepth / 2 + 0.005]}>
-          <boxGeometry args={[benchWidth + 0.02, topThickness + 0.01, 0.01]} />
-          <meshStandardMaterial color="#94a3b8" roughness={0.4} />
-        </mesh>
-
-        {/* Bench Metal Legs (Satin Brushed Aluminum) */}
-        {[
-          [-benchWidth / 2 + 0.08, benchDepth / 2 - 0.08],
-          [benchWidth / 2 - 0.08, benchDepth / 2 - 0.08],
-          [-benchWidth / 2 + 0.08, -benchDepth / 2 + 0.08],
-          [benchWidth / 2 - 0.08, -benchDepth / 2 + 0.08],
-        ].map(([lx, lz], i) => (
-          <mesh
-            key={i}
-            position={[lx, benchHeight / 2, lz]}
-            castShadow
-            receiveShadow
-          >
-            <cylinderGeometry args={[0.024, 0.024, benchHeight, 16]} />
-            <meshStandardMaterial
-              color="#cbd5e1"
-              metalness={0.8}
-              roughness={0.25}
-            />
+      {/* ==================================================================== */}
+      {/* CEILING RECESSED DAYLIGHT TROFFER LIGHT FIXTURES                     */}
+      {/* ==================================================================== */}
+      {[
+        [-5.0, -8.0], [0, -8.0], [5.0, -8.0],
+        [-5.0, -3.0], [0, -3.0], [5.0, -3.0],
+        [-5.0, 1.5],  [0, 1.5],  [5.0, 1.5],
+        [-5.0, 6.0],  [0, 6.0],  [5.0, 6.0],
+        [-5.0, 10.0], [0, 10.0], [5.0, 10.0],
+      ].map(([tx, tz], tIdx) => (
+        <group key={tIdx} position={[tx, wallHeight - 0.02, tz]}>
+          {/* Troffer Frame */}
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[1.8, 0.9]} />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.4} roughness={0.3} />
           </mesh>
-        ))}
-
-        {/* Under-Bench Clean Storage Cabinet */}
-        <mesh
-          position={[-0.85, (benchHeight - 0.1) / 2, -0.05]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[1.1, benchHeight - 0.1, benchDepth - 0.2]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.5} />
-        </mesh>
-
-        {/* Cabinet Handles & Subtle Teal Trim */}
-        <mesh position={[-0.85, (benchHeight - 0.1) * 0.7, benchDepth / 2 - 0.15 + 0.058]}>
-          <boxGeometry args={[0.4, 0.014, 0.012]} />
-          <meshStandardMaterial color="#0d9488" metalness={0.3} roughness={0.3} />
-        </mesh>
-        <mesh position={[-0.85, (benchHeight - 0.1) * 0.35, benchDepth / 2 - 0.15 + 0.058]}>
-          <boxGeometry args={[0.4, 0.014, 0.012]} />
-          <meshStandardMaterial color="#0d9488" metalness={0.3} roughness={0.3} />
-        </mesh>
-
-        {/* Benchtop Reagent Rack Shelf (Back of the Table) */}
-        <group position={[0, benchHeight + topThickness, -benchDepth / 2 + 0.18]}>
-          {/* Lower Shelf Board (Light Neutral) */}
-          <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
-            <boxGeometry args={[benchWidth * 0.9, 0.02, 0.22]} />
-            <meshStandardMaterial color="#f1f5f9" roughness={0.4} />
-          </mesh>
-
-          {/* Upper Shelf Board */}
-          <mesh position={[0, 0.36, 0]} castShadow receiveShadow>
-            <boxGeometry args={[benchWidth * 0.9, 0.02, 0.22]} />
-            <meshStandardMaterial color="#f1f5f9" roughness={0.4} />
-          </mesh>
-
-          {/* Shelf Uprights (Satin Metal) */}
-          {[-1.2, 0, 1.2].map((sx, idx) => (
-            <mesh key={idx} position={[sx, 0.2, 0]} castShadow>
-              <boxGeometry args={[0.024, 0.4, 0.22]} />
-              <meshStandardMaterial color="#94a3b8" metalness={0.7} roughness={0.3} />
-            </mesh>
-          ))}
-
-          {/* Reagent Chemical Bottles on Shelves (Realistic Color Coding) */}
-          {[
-            { x: -0.9, y: 0.17, color: '#f59e0b', amber: true },
-            { x: -0.75, y: 0.17, color: '#3b82f6', amber: false },
-            { x: -0.6, y: 0.17, color: '#ec4899', amber: true },
-            { x: -0.45, y: 0.17, color: '#10b981', amber: false },
-            { x: 0.45, y: 0.17, color: '#8b5cf6', amber: true },
-            { x: 0.6, y: 0.17, color: '#f97316', amber: true },
-            { x: 0.75, y: 0.17, color: '#e2e8f0', amber: true },
-            { x: 0.9, y: 0.17, color: '#0284c7', amber: false },
-            // Upper shelf
-            { x: -0.35, y: 0.37, color: '#0284c7', amber: false },
-            { x: -0.2, y: 0.37, color: '#64748b', amber: true },
-            { x: 0.2, y: 0.37, color: '#cbd5e1', amber: true },
-            { x: 0.35, y: 0.37, color: '#e2e8f0', amber: false },
-          ].map((bottle, bIdx) => (
-            <group key={bIdx} position={[bottle.x, bottle.y, 0]}>
-              {/* Bottle body */}
-              <mesh position={[0, 0.05, 0]} castShadow>
-                <cylinderGeometry args={[0.032, 0.032, 0.1, 16]} />
-                <meshStandardMaterial
-                  color={bottle.amber ? '#92400e' : '#f8fafc'}
-                  roughness={bottle.amber ? 0.3 : 0.12}
-                  transparent={!bottle.amber}
-                  opacity={bottle.amber ? 0.88 : 0.6}
-                />
-              </mesh>
-              {/* Bottle neck & cap */}
-              <mesh position={[0, 0.11, 0]} castShadow>
-                <cylinderGeometry args={[0.016, 0.016, 0.028, 16]} />
-                <meshStandardMaterial color="#334155" roughness={0.4} />
-              </mesh>
-              {/* White Paper Label */}
-              <mesh position={[0, 0.05, 0.033]}>
-                <planeGeometry args={[0.042, 0.045]} />
-                <meshBasicMaterial color="#ffffff" />
-              </mesh>
-            </group>
-          ))}
-        </group>
-
-        {/* Bench Utility: Gas Turret Nozzle */}
-        <group position={[-0.05, benchHeight + topThickness, -benchDepth / 2 + 0.35]}>
-          <mesh position={[0, 0.05, 0]} castShadow>
-            <cylinderGeometry args={[0.012, 0.018, 0.1, 12]} />
-            <meshStandardMaterial color="#d97706" metalness={0.8} roughness={0.25} />
-          </mesh>
-          {/* Dual gas outlets */}
-          <mesh position={[0, 0.08, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-            <cylinderGeometry args={[0.007, 0.007, 0.08, 12]} />
-            <meshStandardMaterial color="#d97706" metalness={0.8} roughness={0.25} />
-          </mesh>
-        </group>
-
-        {/* Workstation Porcelain Sink & Goose-neck Water Tap */}
-        <group position={[benchWidth / 2 - 0.28, benchHeight + topThickness, 0]}>
-          {/* Porcelain Sink Rim */}
-          <mesh position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-            <ringGeometry args={[0.12, 0.16, 24]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} />
-          </mesh>
-          {/* Sink Basin depression */}
-          <mesh position={[0, -0.06, 0]} castShadow receiveShadow>
-            <cylinderGeometry args={[0.12, 0.1, 0.12, 24, 1, true]} />
-            <meshStandardMaterial color="#f1f5f9" roughness={0.2} />
-          </mesh>
-          {/* Chrome Goose-neck Faucet */}
-          <mesh position={[0, 0.14, -0.1]} castShadow>
-            <cylinderGeometry args={[0.01, 0.01, 0.24, 16]} />
-            <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.15} />
-          </mesh>
-          <mesh position={[0, 0.26, -0.05]} rotation={[Math.PI / 4, 0, 0]} castShadow>
-            <cylinderGeometry args={[0.009, 0.009, 0.12, 16]} />
-            <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.15} />
-          </mesh>
-        </group>
-      </group>
-
-      {/* ================= LABORATORY CEILING LIGHT TROFFERS ================= */}
-      {[-2, 2].map((cx, i) => (
-        <group key={i} position={[cx, 4.96, 0]}>
-          {/* Light Frame */}
-          <mesh>
-            <boxGeometry args={[1.6, 0.06, 2.4]} />
-            <meshStandardMaterial color="#cbd5e1" roughness={0.4} />
-          </mesh>
-          {/* Daylight Diffuser Panel */}
-          <mesh position={[0, -0.035, 0]}>
-            <planeGeometry args={[1.5, 2.3]} />
+          {/* Diffuser Lens (Illuminated) */}
+          <mesh position={[0, -0.01, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[1.65, 0.75]} />
             <meshBasicMaterial color="#ffffff" />
           </mesh>
         </group>
       ))}
 
-      {/* ================= WALL CHART 1: PERIODIC TABLE (EDUCATIONAL) ================= */}
-      <group position={[-2.2, 2.6, -4.47]}>
-        {/* Frame / Backing */}
+      {/* ==================================================================== */}
+      {/* FRONT TEACHING WALL EQUIPMENT (z = -11.95)                           */}
+      {/* ==================================================================== */}
+      {/* 1. Large Magnetic Whiteboard / Smart Display (Center) */}
+      <group position={[0, 2.5, -11.94]}>
+        {/* Aluminum Outer Frame */}
         <mesh>
-          <planeGeometry args={[2.0, 1.2]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.3} />
+          <boxGeometry args={[5.8, 2.0, 0.03]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.7} roughness={0.3} />
         </mesh>
-        {/* Header Bar */}
-        <mesh position={[0, 0.48, 0.001]}>
-          <planeGeometry args={[1.92, 0.14]} />
+        {/* Gloss White Surface */}
+        <mesh position={[0, 0, 0.02]}>
+          <planeGeometry args={[5.65, 1.85]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.08} metalness={0.02} />
+        </mesh>
+        {/* Marker & Eraser Tray */}
+        <mesh position={[0, -0.98, 0.06]}>
+          <boxGeometry args={[5.65, 0.04, 0.09]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.8} />
+        </mesh>
+        {/* Heading: Class 11-12 Chemistry Practical Demonstration */}
+        <mesh position={[0, 0.8, 0.025]}>
+          <planeGeometry args={[3.2, 0.12]} />
           <meshBasicMaterial color="#0284c7" />
         </mesh>
-        {/* Representative Periodic Table Block Grid */}
-        {[-0.7, -0.42, -0.14, 0.14, 0.42, 0.7].map((colX, cIdx) => (
-          <group key={cIdx} position={[colX, -0.05, 0.002]}>
-            {[0.3, 0.12, -0.06, -0.24, -0.42].map((rowY, rIdx) => {
-              const colors = ['#f87171', '#fb923c', '#fbbf24', '#34d399', '#38bdf8', '#a78bfa'];
-              const cellColor = colors[(cIdx + rIdx) % colors.length];
-              return (
-                <mesh key={rIdx} position={[0, rowY, 0]}>
-                  <planeGeometry args={[0.22, 0.12]} />
-                  <meshBasicMaterial color={cellColor} />
-                </mesh>
-              );
-            })}
-          </group>
-        ))}
       </group>
 
-      {/* ================= WALL CHART 2: SAFETY & EYEWASH NOTICE ================= */}
-      <group position={[2.2, 2.6, -4.47]}>
-        {/* Sign Plate */}
+      {/* 2. CBSE Class 11-12 Periodic Table of Elements Chart (Left of Whiteboard) */}
+      <group position={[-5.8, 2.5, -11.94]}>
         <mesh>
-          <planeGeometry args={[1.6, 1.2]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.3} />
+          <boxGeometry args={[4.4, 2.1, 0.02]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.5} roughness={0.4} />
         </mesh>
-        {/* Safety Green Header */}
-        <mesh position={[0, 0.46, 0.001]}>
-          <planeGeometry args={[1.52, 0.18]} />
-          <meshBasicMaterial color="#16a34a" />
+        <mesh position={[0, 0, 0.015]}>
+          <planeGeometry args={[4.25, 1.95]} />
+          <meshBasicMaterial color="#f8fafc" />
         </mesh>
-        {/* ISO Safety Cross Symbol */}
-        <mesh position={[0, 0.12, 0.002]}>
-          <planeGeometry args={[0.12, 0.34]} />
-          <meshBasicMaterial color="#16a34a" />
+        {/* Periodic Table Header Band */}
+        <mesh position={[0, 0.82, 0.02]}>
+          <planeGeometry args={[4.1, 0.18]} />
+          <meshBasicMaterial color="#0d9488" />
         </mesh>
-        <mesh position={[0, 0.12, 0.003]}>
-          <planeGeometry args={[0.34, 0.12]} />
-          <meshBasicMaterial color="#16a34a" />
-        </mesh>
-        {/* Safety Rule Text Strip Mockups */}
-        {[-0.15, -0.28, -0.41].map((ruleY, rIdx) => (
-          <mesh key={rIdx} position={[0, ruleY, 0.002]}>
-            <planeGeometry args={[1.35, 0.06]} />
-            <meshBasicMaterial color="#e2e8f0" />
+        {/* Element grid color blocks */}
+        {[-1.6, -0.8, 0, 0.8, 1.6].map((ex, eIdx) => (
+          <mesh key={eIdx} position={[ex, 0, 0.02]}>
+            <planeGeometry args={[0.7, 1.2]} />
+            <meshBasicMaterial color={['#bae6fd', '#bbf7d0', '#fef08a', '#fed7aa', '#fbcfe8'][eIdx]} />
           </mesh>
         ))}
       </group>
+
+      {/* 3. Laboratory Safety & Emergency Protocols Chart (Right of Whiteboard) */}
+      <group position={[5.4, 2.5, -11.94]}>
+        <mesh>
+          <boxGeometry args={[3.2, 2.1, 0.02]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.5} roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0, 0.015]}>
+          <planeGeometry args={[3.05, 1.95]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+        {/* Safety Header Band (Amber/Red) */}
+        <mesh position={[0, 0.82, 0.02]}>
+          <planeGeometry args={[2.9, 0.18]} />
+          <meshBasicMaterial color="#d97706" />
+        </mesh>
+        {/* Safety Symbol Badges */}
+        {[-0.8, 0, 0.8].map((sx, sIdx) => (
+          <mesh key={sIdx} position={[sx, 0.2, 0.02]}>
+            <circleGeometry args={[0.2, 24]} />
+            <meshBasicMaterial color={['#0284c7', '#16a34a', '#dc2626'][sIdx]} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* 4. Classroom Wall Clock (Center above whiteboard) */}
+      <group position={[0, 4.0, -11.94]}>
+        <mesh>
+          <cylinderGeometry args={[0.3, 0.3, 0.04, 32]} rotation={[Math.PI / 2, 0, 0]} />
+          <meshStandardMaterial color="#334155" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0, 0.025]}>
+          <circleGeometry args={[0.27, 32]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+        {/* Clock Hands */}
+        <mesh position={[0, 0.05, 0.03]} rotation={[0, 0, -0.5]}>
+          <boxGeometry args={[0.012, 0.16, 0.005]} />
+          <meshBasicMaterial color="#0f172a" />
+        </mesh>
+        <mesh position={[0.04, 0, 0.03]} rotation={[0, 0, -1.8]}>
+          <boxGeometry args={[0.008, 0.22, 0.005]} />
+          <meshBasicMaterial color="#dc2626" />
+        </mesh>
+      </group>
+
+      {/* ==================================================================== */}
+      {/* STORAGE, SAFETY & SPECIALIZED APPARATUS BENCHES                      */}
+      {/* ==================================================================== */}
+      <EquipmentStorage />
     </group>
   );
 }
-

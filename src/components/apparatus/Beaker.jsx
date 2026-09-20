@@ -44,16 +44,16 @@ export function Beaker({
       rotation={rotation}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(id);
+        if (onSelect) onSelect(id);
       }}
       onPointerOver={(e) => {
         e.stopPropagation();
-        onHover(id);
+        if (onHover) onHover(id);
         document.body.style.cursor = 'pointer';
       }}
       onPointerOut={(e) => {
         e.stopPropagation();
-        onHover(null);
+        if (onHover) onHover(null);
         document.body.style.cursor = 'default';
       }}
     >
