@@ -7,27 +7,26 @@ import { createInitialPlayerState } from './playerTypes';
 import { PlayerAvatar } from './PlayerAvatar';
 
 /**
- * Player Controller Component (First-Person POV).
- * Encapsulates:
- * - First-Person Camera at student eye level (~1.65m)
- * - Mouse look with pointer lock and drag fallback (yaw/pitch)
- * - WASD & Arrow Key movement relative to view angle
- * - Walk / Sprint speed states (Shift key)
- * - Axis-sliding collision detection with walls, benches, and fixed equipment
- * - Authoritative player state tracking structured for future Socket.IO synchronization
- * - Non-obstructing local avatar representation preserved for multiplayer readiness
+ * Player Controller Component.
+ * Supports dual camera perspectives:
+ * - First-Person POV: Eye level (~1.65m), sight-vector mouse look, direct body alignment
+ * - Third-Person POV: Smooth follow camera with orbital rotation, zoom, and turning avatar
+ * - Seamless preservation of player position, heading, velocity, and collision detection across modes
  */
 export function PlayerController({
   playerName = 'Arjun Sharma',
   role = 'student',
   color = '#0284c7',
   isActive = true,
+  povMode = 'first-person', // 'first-person' | 'third-person'
   teleportTarget = null,
   heldApparatus = null,
   onStateUpdate,
 }) {
   const { camera, gl } = useThree();
   const keys = usePlayerControls();
+
+  const isFirstPerson = povMode === 'first-person';
 
   // Internal Player State Structure (pre-formatted for network synchronization)
   const playerState = useRef(
@@ -50,13 +49,19 @@ export function PlayerController({
   const currentPos = useRef(new THREE.Vector3(0, 0, 8.5));
   const currentVel = useRef(new THREE.Vector3(0, 0, 0));
   const currentRotY = useRef(0);
+  const targetRotY = useRef(0);
 
-  // First-Person Camera Look Angles
-  // yaw = 0 faces -Z (toward the teacher demonstration bench and blackboard)
+  // Camera Look & Orbital Angles
+  // yaw = 0 faces -Z (toward front blackboard)
   const cameraYaw = useRef(0);
-  const cameraPitch = useRef(0); // 0 = level eye line
+  const cameraPitch = useRef(0); // 0 = eye level
+  const cameraDistance = useRef(3.8); // 3rd-person follow distance
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
+
+  // Camera damping targets for 3rd person
+  const cameraTarget = useRef(new THREE.Vector3(0, 1.35, 8.5));
+  const desiredCamPos = useRef(new THREE.Vector3(0, 2.5, 12.0));
 
   // Handle teleportation to stations or points
   useEffect(() => {
@@ -65,11 +70,12 @@ export function PlayerController({
       currentVel.current.set(0, 0, 0);
       if (teleportTarget.rotY !== undefined) {
         currentRotY.current = teleportTarget.rotY;
+        targetRotY.current = teleportTarget.rotY;
         cameraYaw.current = teleportTarget.rotY;
       }
-      cameraPitch.current = 0;
+      cameraPitch.current = isFirstPerson ? 0 : 0.28;
     }
-  }, [teleportTarget]);
+  }, [teleportTarget, isFirstPerson]);
 
   // Avatar group ref and movement ref
   const avatarGroupRef = useRef();
@@ -80,7 +86,7 @@ export function PlayerController({
     animationState: 'idle',
   });
 
-  // Setup First-Person Mouse Look (Pointer Lock with Smooth Drag Fallback)
+  // Setup Mouse Look (Pointer Lock for 1st-Person & Drag / Zoom for 3rd-Person)
   useEffect(() => {
     const domElement = gl.domElement;
     if (!domElement) return;
@@ -97,8 +103,8 @@ export function PlayerController({
       isDragging.current = true;
       previousMousePosition.current = { x: e.clientX, y: e.clientY };
 
-      // Left or right click requests pointer lock for game-like mouse look
-      if (e.button === 0 || e.button === 2) {
+      // In first-person mode, clicking requests pointer lock
+      if (isFirstPerson && (e.button === 0 || e.button === 2)) {
         requestLock();
       }
     };
@@ -108,30 +114,38 @@ export function PlayerController({
 
       const isPointerLocked = document.pointerLockElement === domElement;
 
-      if (isPointerLocked) {
-        // Native pointer lock mouse delta
+      if (isFirstPerson && isPointerLocked) {
+        // First-person native pointer lock
         const sensitivity = 0.0022;
         const movementX = e.movementX || 0;
         const movementY = e.movementY || 0;
 
         cameraYaw.current -= movementX * sensitivity;
-        // Pitch clamped between -85 deg (-1.48 rad) looking down and +85 deg looking up
         cameraPitch.current = Math.max(
           -1.48,
           Math.min(1.48, cameraPitch.current - movementY * sensitivity)
         );
       } else if (isDragging.current) {
-        // Drag fallback (useful in iframes or before pointer lock engaged)
+        // Drag fallback (1st person drag or 3rd person orbit)
         const deltaX = e.clientX - previousMousePosition.current.x;
         const deltaY = e.clientY - previousMousePosition.current.y;
         previousMousePosition.current = { x: e.clientX, y: e.clientY };
 
-        const sensitivity = 0.0035;
+        const sensitivity = isFirstPerson ? 0.0035 : 0.0045;
         cameraYaw.current -= deltaX * sensitivity;
-        cameraPitch.current = Math.max(
-          -1.48,
-          Math.min(1.48, cameraPitch.current - deltaY * sensitivity)
-        );
+
+        if (isFirstPerson) {
+          cameraPitch.current = Math.max(
+            -1.48,
+            Math.min(1.48, cameraPitch.current - deltaY * sensitivity)
+          );
+        } else {
+          // In 3rd person, dragging down looks down / pitches up
+          cameraPitch.current = Math.max(
+            -0.08,
+            Math.min(1.22, cameraPitch.current + deltaY * sensitivity)
+          );
+        }
       }
     };
 
@@ -139,25 +153,35 @@ export function PlayerController({
       isDragging.current = false;
     };
 
+    const onWheel = (e) => {
+      if (!isActive || isFirstPerson) return;
+      // Zoom camera distance in 3rd person mode
+      cameraDistance.current = Math.max(
+        1.8,
+        Math.min(7.5, cameraDistance.current + e.deltaY * 0.0035)
+      );
+    };
+
     const onContextMenu = (e) => {
-      // Prevent browser context menu on right click inside canvas
       e.preventDefault();
     };
 
     domElement.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    domElement.addEventListener('wheel', onWheel, { passive: true });
     domElement.addEventListener('contextmenu', onContextMenu);
 
     return () => {
       domElement.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      domElement.removeEventListener('wheel', onWheel);
       domElement.removeEventListener('contextmenu', onContextMenu);
     };
-  }, [gl, isActive]);
+  }, [gl, isActive, isFirstPerson]);
 
-  // Main First-Person Movement & Camera Update Loop (60/120 FPS)
+  // Main Movement & Camera Update Loop (60/120 FPS)
   useFrame((state, delta) => {
     if (!isActive) return;
 
@@ -166,7 +190,7 @@ export function PlayerController({
 
     const { forward, backward, left, right, run } = keys.current;
 
-    // 1. Calculate Input Direction in First-Person Camera Space
+    // 1. Calculate Input Direction in Camera-Relative Space
     let inputX = 0;
     let inputZ = 0;
 
@@ -190,7 +214,7 @@ export function PlayerController({
       const normZ = inputZ / inputLen;
 
       // Rotate movement vector by current camera yaw
-      // Forward (normZ = -1) moves toward where the student's eyes are looking
+      // Forward (normZ = -1) moves toward where the camera is facing
       const cosYaw = Math.cos(cameraYaw.current);
       const sinYaw = Math.sin(cameraYaw.current);
 
@@ -199,6 +223,11 @@ export function PlayerController({
 
       targetVelX = moveWorldX * targetSpeed;
       targetVelZ = moveWorldZ * targetSpeed;
+
+      // In 3rd-person, face movement direction; in 1st-person, face camera yaw
+      if (!isFirstPerson) {
+        targetRotY.current = Math.atan2(moveWorldX, moveWorldZ);
+      }
     }
 
     // 2. Smooth Acceleration and Deceleration
@@ -226,11 +255,17 @@ export function PlayerController({
     currentPos.current.z = resolved.z;
 
     // 4. Update Avatar Position & Heading
-    currentRotY.current = cameraYaw.current;
+    if (isFirstPerson) {
+      currentRotY.current = cameraYaw.current;
+    } else if (isMoving) {
+      let diff = targetRotY.current - currentRotY.current;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      currentRotY.current += diff * Math.min(1.0, dt * 14.0);
+    }
 
     if (avatarGroupRef.current) {
       avatarGroupRef.current.position.set(currentPos.current.x, 0, currentPos.current.z);
-      avatarGroupRef.current.rotation.y = cameraYaw.current;
+      avatarGroupRef.current.rotation.y = currentRotY.current;
     }
 
     visualMovement.current = {
@@ -240,11 +275,11 @@ export function PlayerController({
       animationState: isRunning ? 'run' : isMoving ? 'walk' : 'idle',
     };
 
-    // 5. Update Synchronizable Player State Structure (ready for remote replication)
+    // 5. Update Synchronizable Player State Structure
     playerState.current.position[0] = currentPos.current.x;
     playerState.current.position[1] = 0;
     playerState.current.position[2] = currentPos.current.z;
-    playerState.current.rotation[1] = cameraYaw.current;
+    playerState.current.rotation[1] = currentRotY.current;
     playerState.current.movement.isMoving = isMoving;
     playerState.current.movement.isRunning = isRunning;
     playerState.current.movement.speed = actualSpeed;
@@ -257,21 +292,43 @@ export function PlayerController({
       onStateUpdate(playerState.current);
     }
 
-    // 6. First-Person Camera Position & View Vector
-    // Student Eye Level: 1.65 meters above the floor
-    const EYE_HEIGHT = 1.65;
-    const eyeX = currentPos.current.x;
-    const eyeY = EYE_HEIGHT;
-    const eyeZ = currentPos.current.z;
+    // 6. Camera Position & Look Update
+    if (isFirstPerson) {
+      // First-Person POV at 1.65m eye level
+      const EYE_HEIGHT = 1.65;
+      const eyeX = currentPos.current.x;
+      const eyeY = EYE_HEIGHT;
+      const eyeZ = currentPos.current.z;
 
-    camera.position.set(eyeX, eyeY, eyeZ);
+      camera.position.set(eyeX, eyeY, eyeZ);
 
-    // Compute forward sight vector from pitch and yaw
-    const dirX = -Math.sin(cameraYaw.current) * Math.cos(cameraPitch.current);
-    const dirY = Math.sin(cameraPitch.current);
-    const dirZ = -Math.cos(cameraYaw.current) * Math.cos(cameraPitch.current);
+      const dirX = -Math.sin(cameraYaw.current) * Math.cos(cameraPitch.current);
+      const dirY = Math.sin(cameraPitch.current);
+      const dirZ = -Math.cos(cameraYaw.current) * Math.cos(cameraPitch.current);
 
-    camera.lookAt(eyeX + dirX, eyeY + dirY, eyeZ + dirZ);
+      camera.lookAt(eyeX + dirX, eyeY + dirY, eyeZ + dirZ);
+    } else {
+      // Third-Person POV orbiting behind player
+      const targetX = currentPos.current.x;
+      const targetY = 1.35;
+      const targetZ = currentPos.current.z;
+
+      cameraTarget.current.set(targetX, targetY, targetZ);
+
+      const dist = cameraDistance.current;
+      const pitch = cameraPitch.current;
+      const yaw = cameraYaw.current;
+
+      const offsetX = Math.sin(yaw) * Math.cos(pitch) * dist;
+      const offsetY = Math.sin(pitch) * dist;
+      const offsetZ = Math.cos(yaw) * Math.cos(pitch) * dist;
+
+      const targetCamY = Math.max(0.45, targetY + offsetY);
+      desiredCamPos.current.set(targetX + offsetX, targetCamY, targetZ + offsetZ);
+
+      camera.position.lerp(desiredCamPos.current, Math.min(1.0, dt * 8.0));
+      camera.lookAt(cameraTarget.current);
+    }
   });
 
   return (
@@ -282,7 +339,7 @@ export function PlayerController({
         color={color}
         movementRef={visualMovement}
         isLocal={true}
-        isFirstPerson={true}
+        isFirstPerson={isFirstPerson}
         heldApparatus={heldApparatus}
       />
     </group>

@@ -14,6 +14,7 @@ export function Player({
   role = 'student',
   color = '#0284c7',
   isActive = true,
+  povMode = 'first-person',
   teleportTarget = null,
   heldApparatus = null,
   onStateUpdate,
@@ -24,6 +25,7 @@ export function Player({
       role={role}
       color={color}
       isActive={isActive}
+      povMode={povMode}
       teleportTarget={teleportTarget}
       heldApparatus={heldApparatus}
       onStateUpdate={onStateUpdate}

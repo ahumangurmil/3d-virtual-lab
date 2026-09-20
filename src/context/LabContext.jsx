@@ -23,7 +23,12 @@ export function LabProvider({ children }) {
   const [playerName, setPlayerName] = useState(DEFAULT_PLAYER_NAME);
   const [playerRole] = useState('student'); // 'student' | 'teacher'
   const [controlMode, setControlMode] = useState('avatar'); // 'avatar' (3rd person WASD) | 'overview' (Orbit)
+  const [povMode, setPovMode] = useState('first-person'); // 'first-person' | 'third-person'
   const [teleportTarget, setTeleportTarget] = useState(null);
+
+  const togglePovMode = useCallback(() => {
+    setPovMode((prev) => (prev === 'first-person' ? 'third-person' : 'first-person'));
+  }, []);
 
   // Synchronizable Player State Structure (ready for future Socket.IO sync)
   const playerStateRef = useRef(createInitialPlayerState({ name: playerName, role: playerRole }));
@@ -173,6 +178,9 @@ export function LabProvider({ children }) {
       hoveredId,
       cameraPreset,
       controlMode,
+      povMode,
+      setPovMode,
+      togglePovMode,
       playerName,
       playerRole,
       playerStateRef,
@@ -209,6 +217,8 @@ export function LabProvider({ children }) {
       hoveredId,
       cameraPreset,
       controlMode,
+      povMode,
+      togglePovMode,
       playerName,
       playerRole,
       teleportTarget,

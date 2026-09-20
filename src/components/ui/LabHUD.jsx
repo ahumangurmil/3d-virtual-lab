@@ -12,6 +12,8 @@ export function LabHUD() {
     setCameraPreset,
     controlMode,
     setControlMode,
+    povMode,
+    togglePovMode,
     playerName,
     setPlayerName,
     teleportToStation,
@@ -293,6 +295,35 @@ export function LabHUD() {
               Overview
             </button>
           </div>
+
+          {/* POV Perspective Toggle (1st Person vs 3rd Person) */}
+          {controlMode === 'avatar' && (
+            <button
+              type="button"
+              className="hud-btn"
+              onClick={togglePovMode}
+              title={`Switch camera to ${povMode === 'first-person' ? '3rd-Person Follow POV' : '1st-Person Eye POV'}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                padding: '5px 11px',
+                fontWeight: 600,
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                color: '#0f172a',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              <span>{povMode === 'first-person' ? '1st Person' : '3rd Person'}</span>
+            </button>
+          )}
 
           <span style={{ width: '1px', height: '22px', backgroundColor: '#e2e8f0', margin: '0 2px' }} />
 
@@ -587,7 +618,11 @@ export function LabHUD() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <kbd style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#0f172a', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>Mouse</kbd>
-                <span>Look Around (Click Canvas to Lock, Esc to Release)</span>
+                <span>
+                  {povMode === 'first-person'
+                    ? 'Look Around (Click Canvas to Lock, Esc to Release)'
+                    : 'Drag to Rotate View / Scroll to Zoom'}
+                </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#0d9488', background: '#ccfbf1', padding: '2px 8px', borderRadius: '12px' }}>

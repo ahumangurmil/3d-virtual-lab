@@ -27,6 +27,7 @@ export function LabCanvas() {
     playerName,
     playerRole,
     controlMode,
+    povMode,
     teleportTarget,
     handlePlayerStateUpdate,
   } = useLab();
@@ -158,6 +159,7 @@ export function LabCanvas() {
           role={playerRole}
           color="#0284c7"
           isActive={controlMode === 'avatar'}
+          povMode={povMode}
           teleportTarget={teleportTarget}
           heldApparatus={heldApparatus}
           onStateUpdate={handlePlayerStateUpdate}
