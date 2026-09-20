@@ -1,4 +1,4 @@
-# 🧪 Virtual Chemistry Lab
+# 🧪3D Virtual Chemistry Lab
 
 A 3D interactive chemistry laboratory where students can **enter a virtual lab, interact with equipment, and perform chemistry experiments** in an immersive environment.
 
