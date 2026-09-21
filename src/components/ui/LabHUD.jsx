@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLab } from '../../context/LabContext';
+import { TitrationGuideHUD } from './TitrationGuideHUD';
 
 export function LabHUD() {
   const {
@@ -31,6 +32,9 @@ export function LabHUD() {
     addReagent,
     measureApparatus,
     heatApparatus,
+    turnBuretteStopcock,
+    swirlConicalFlask,
+    alignFlaskUnderBurette,
   } = useLab();
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -409,6 +413,9 @@ export function LabHUD() {
           )}
         </div>
       </header>
+ 
+      {/* ================= COMPACT GUIDED EXPERIMENT HUD ================= */}
+      <TitrationGuideHUD />
 
       {/* ================= FIRST-PERSON AIMING RETICLE ================= */}
       {controlMode === 'avatar' && povMode === 'first-person' && (
@@ -539,7 +546,7 @@ export function LabHUD() {
               </>
             )}
 
-            {/* [ P ] Pour Liquid (if carrying a container and targeting another container) */}
+            {/* [ P ] Pour / Aspirate / Dispense Liquid */}
             {heldApparatus && (heldApparatus.capacity || heldApparatus.liquid) && (targetApparatus.capacity || targetApparatus.liquid) && (
               <>
                 <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '9px' }}>•</span>
@@ -558,7 +565,13 @@ export function LabHUD() {
                     fontSize: '11px',
                     fontWeight: 500,
                   }}
-                  title={`Pour 25 mL from ${heldApparatus.name} into ${targetApparatus.name} [P]`}
+                  title={
+                    heldApparatus.type === 'pipette_25'
+                      ? (heldApparatus.liquid?.volume || 0) < 5
+                        ? `Aspirate 25 mL into Pipette [P]`
+                        : `Dispense 25 mL from Pipette into ${targetApparatus.name} [P]`
+                      : `Pour from ${heldApparatus.name} into ${targetApparatus.name} [P]`
+                  }
                 >
                   <kbd
                     style={{
@@ -575,7 +588,131 @@ export function LabHUD() {
                   >
                     P
                   </kbd>
-                  <span>Pour 25 mL</span>
+                  <span>
+                    {heldApparatus.type === 'pipette_25'
+                      ? (heldApparatus.liquid?.volume || 0) < 5
+                        ? 'Aspirate 25 mL'
+                        : 'Dispense 25 mL'
+                      : 'Transfer Liquid'}
+                  </span>
+                </button>
+              </>
+            )}
+
+            {/* [ T ] Turn Burette Stopcock (if targeting or near burette) */}
+            {targetApparatus.type === 'burette_50' && (
+              <>
+                <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '9px' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => turnBuretteStopcock(10)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '1px 2px',
+                    color: '#38bdf8',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                  }}
+                  title="Turn Burette Stopcock to dispense titrant [T]"
+                >
+                  <kbd
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.25)',
+                      color: '#38bdf8',
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      lineHeight: '12px',
+                    }}
+                  >
+                    T
+                  </kbd>
+                  <span>Turn Stopcock</span>
+                </button>
+              </>
+            )}
+
+            {/* [ S ] Swirl Flask & [ A ] Align Under Burette (if targeting conical flask) */}
+            {targetApparatus.type === 'conical_flask_250' && (
+              <>
+                <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '9px' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => swirlConicalFlask(targetApparatus.id)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '1px 2px',
+                    color: '#f472b6',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                  }}
+                  title="Swirl conical flask to mix solution and observe indicator flashes [S]"
+                >
+                  <kbd
+                    style={{
+                      background: 'rgba(244, 114, 182, 0.25)',
+                      color: '#f472b6',
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      border: '1px solid rgba(244, 114, 182, 0.4)',
+                      lineHeight: '12px',
+                    }}
+                  >
+                    S
+                  </kbd>
+                  <span>Swirl Flask</span>
+                </button>
+
+                <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '9px' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => alignFlaskUnderBurette()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '1px 2px',
+                    color: '#a78bfa',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                  }}
+                  title="Position conical flask directly beneath burette tip [A]"
+                >
+                  <kbd
+                    style={{
+                      background: 'rgba(167, 139, 250, 0.25)',
+                      color: '#c4b5fd',
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      border: '1px solid rgba(167, 139, 250, 0.4)',
+                      lineHeight: '12px',
+                    }}
+                  >
+                    A
+                  </kbd>
+                  <span>Align Burette</span>
                 </button>
               </>
             )}

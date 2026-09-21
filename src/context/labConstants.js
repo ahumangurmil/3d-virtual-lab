@@ -1,4 +1,8 @@
-import { createInitialSolution, applySolutionToApparatus } from '../chemistry/chemistryEngine';
+import {
+  createInitialSolution,
+  createEmptySolution,
+  applySolutionToApparatus,
+} from '../chemistry/chemistryEngine';
 
 export const WORKSTATIONS = [
   {
@@ -135,7 +139,7 @@ function createStationApparatus(station) {
         workstationId: station.id,
         stationName: station.name,
         type: isTeacher ? 'beaker_500' : 'beaker_250',
-        name: isTeacher ? 'Demo 500 mL Beaker' : `${station.name} Beaker`,
+        name: isTeacher ? 'Demo 500 mL Beaker' : `${station.name} HCl Beaker (0.1 M)`,
         position: [wx - 0.55, 0.92, wz + 0.15],
         rotation: [0, 0.2, 0],
         capacity: isTeacher ? 500 : 250,
@@ -144,13 +148,38 @@ function createStationApparatus(station) {
         isHeld: false,
         heldBy: null,
         currentSurface: station.name,
-        description: 'Flat-bottomed cylindrical borosilicate glass vessel used to hold, mix, and roughly measure liquids. Features a pouring spout and graduation markings.',
-        safetyNotes: 'Check for cracks before use. Use heat-resistant tongs or gloves when warm.',
+        description: 'Flat-bottomed cylindrical borosilicate glass vessel containing 0.100 M Hydrochloric Acid (HCl) analyte solution.',
+        safetyNotes: 'Corrosive acid. Wear safety goggles and gloves when handling.',
       },
       createInitialSolution({
         chemicalId: isTeacher ? 'copper-sulfate' : 'hydrochloric-acid',
         volume: isTeacher ? 300 : 100,
         concentration: isTeacher ? 0.5 : 0.1,
+        temperature: 24,
+      })
+    ),
+    applySolutionToApparatus(
+      {
+        id: `${prefix}-beaker-naoh`,
+        workstationId: station.id,
+        stationName: station.name,
+        type: 'beaker_250',
+        name: isTeacher ? 'Demo NaOH Supply' : `${station.name} NaOH Supply (0.1 M)`,
+        position: [wx - 0.75, 0.92, wz + 0.15],
+        rotation: [0, -0.15, 0],
+        capacity: 250,
+        interactable: true,
+        isPickable: true,
+        isHeld: false,
+        heldBy: null,
+        currentSurface: station.name,
+        description: 'Borosilicate vessel containing standardized 0.100 M Sodium Hydroxide (NaOH) secondary standard titrant solution for filling the burette.',
+        safetyNotes: 'Caustic alkali base. Causes chemical burns. Rinse immediately if contact occurs.',
+      },
+      createInitialSolution({
+        chemicalId: 'sodium-hydroxide',
+        volume: 150,
+        concentration: 0.1,
         temperature: 24,
       })
     ),
@@ -172,10 +201,57 @@ function createStationApparatus(station) {
         description: 'Cone-shaped flask with a flat base and narrow neck. Specially designed for acid-base titrations; the tapered neck allows vigorous swirling without spilling.',
         safetyNotes: 'Ensure neck stays clear. Do not seal tightly with stopper if heating.',
       },
+      isTeacher
+        ? createInitialSolution({
+            chemicalId: 'water',
+            volume: 120,
+            concentration: 55.5,
+            temperature: 24,
+          })
+        : createEmptySolution()
+    ),
+    applySolutionToApparatus(
+      {
+        id: `${prefix}-pipette-1`,
+        workstationId: station.id,
+        stationName: station.name,
+        type: 'pipette_25',
+        name: isTeacher ? 'Demo 25 mL Pipette' : `${station.name} 25 mL Pipette`,
+        position: [wx - 0.35, 0.92, wz - 0.15],
+        rotation: [0, 0, 0],
+        capacity: 25,
+        interactable: true,
+        isPickable: true,
+        isHeld: false,
+        heldBy: null,
+        currentSurface: station.name,
+        description: 'Class A volumetric transfer pipette calibrated to deliver 25.0 mL of liquid at 20 °C.',
+        safetyNotes: 'Never pipette by mouth. Always use a pipette filler bulb.',
+      },
+      createEmptySolution()
+    ),
+    applySolutionToApparatus(
+      {
+        id: `${prefix}-indicator-1`,
+        workstationId: station.id,
+        stationName: station.name,
+        type: 'indicator_bottle',
+        name: isTeacher ? 'Demo Phenolphthalein Bottle' : `${station.name} Phenolphthalein Indicator`,
+        position: [wx + 0.12, 0.92, wz - 0.18],
+        rotation: [0, 0.3, 0],
+        capacity: 50,
+        interactable: true,
+        isPickable: true,
+        isHeld: false,
+        heldBy: null,
+        currentSurface: station.name,
+        description: 'Amber glass reagent bottle fitted with dropper pipette containing phenolphthalein indicator solution.',
+        safetyNotes: 'Flammable ethanol solvent base. Keep cap secured when not in use.',
+      },
       createInitialSolution({
-        chemicalId: isTeacher ? 'water' : 'hydrochloric-acid',
-        volume: isTeacher ? 120 : 50,
-        concentration: isTeacher ? 55.5 : 0.1,
+        chemicalId: 'phenolphthalein',
+        volume: 40,
+        concentration: 0.01,
         temperature: 24,
       })
     ),
@@ -197,12 +273,14 @@ function createStationApparatus(station) {
         description: 'High-precision volumetric glassware mounted on a retort stand for quantitative volumetric titrations. Delivers titrant drop by drop through a PTFE stopcock valve.',
         safetyNotes: 'Ensure stopcock is firmly seated. Rinse with titrant before filling to prevent dilution errors.',
       },
-      createInitialSolution({
-        chemicalId: 'sodium-hydroxide',
-        volume: 38,
-        concentration: 0.1,
-        temperature: 24,
-      })
+      isTeacher
+        ? createInitialSolution({
+            chemicalId: 'sodium-hydroxide',
+            volume: 38,
+            concentration: 0.1,
+            temperature: 24,
+          })
+        : createEmptySolution()
     ),
     applySolutionToApparatus(
       {

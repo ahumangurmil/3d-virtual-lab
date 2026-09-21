@@ -1,6 +1,6 @@
 {
   "name": "3D Virtual Lab",
-  "description": "Virtual Chemistry Classroom with scalable workstations for Class 11-12 practicals",
+  "description": "Virtual Chemistry Classroom with scalable workstations for Class 11-12 practicals, featuring guided Acid-Base Titration experiment with state validation",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

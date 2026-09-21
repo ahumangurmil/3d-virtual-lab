@@ -4,6 +4,8 @@ import { Burette } from './Burette';
 import { TestTube } from './TestTube';
 import { TestTubeRack } from './TestTubeRack';
 import { BunsenBurner } from './BunsenBurner';
+import { Pipette } from './Pipette';
+import { IndicatorBottle } from './IndicatorBottle';
 
 /**
  * Pure 3D Visual Apparatus Presentation Component.
@@ -76,6 +78,24 @@ export function ApparatusModel({ apparatus, isSelected = false, isHovered = fals
           isHovered={isHovered}
           position={[0, 0, 0]}
           rotation={[0, 0, 0]}
+        />
+      );
+
+    case 'pipette_25':
+      return (
+        <Pipette
+          liquid={liquid}
+          isSelected={isSelected}
+          isHovered={isHovered}
+        />
+      );
+
+    case 'indicator_bottle':
+      return (
+        <IndicatorBottle
+          liquid={liquid}
+          isSelected={isSelected}
+          isHovered={isHovered}
         />
       );
 

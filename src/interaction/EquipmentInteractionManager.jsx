@@ -30,6 +30,9 @@ export function EquipmentInteractionManager() {
     selectApparatus,
     pourLiquid,
     measureApparatus,
+    turnBuretteStopcock,
+    swirlConicalFlask,
+    alignFlaskUnderBurette,
     playerStateRef,
     controlMode,
     povMode,
@@ -60,13 +63,28 @@ export function EquipmentInteractionManager() {
         }
       }
 
-      // [P] Key: Pour liquid from held container into targeted container
+      // [P] Key: Pour liquid from held container into targeted container (or aspirate into pipette)
       if (e.code === 'KeyP') {
         if (heldApparatusId && targetApparatusId) {
           pourLiquid(heldApparatusId, targetApparatusId, 25);
         } else if (selectedId && targetApparatusId && selectedId !== targetApparatusId) {
           pourLiquid(selectedId, targetApparatusId, 25);
         }
+      }
+
+      // [T] Key: Turn burette stopcock (dispense titrant into conical flask)
+      if (e.code === 'KeyT') {
+        turnBuretteStopcock(10);
+      }
+
+      // [S] Key: Swirl conical flask
+      if (e.code === 'KeyS') {
+        swirlConicalFlask();
+      }
+
+      // [A] Key: Align conical flask under burette tip
+      if (e.code === 'KeyA') {
+        alignFlaskUnderBurette();
       }
 
       // [M] Key: Measure targeted or selected apparatus
@@ -108,6 +126,9 @@ export function EquipmentInteractionManager() {
     selectApparatus,
     pourLiquid,
     measureApparatus,
+    turnBuretteStopcock,
+    swirlConicalFlask,
+    alignFlaskUnderBurette,
   ]);
 
   // Frame loop: Continuous detection & placement raycasting
