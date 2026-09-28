@@ -1,8 +1,77 @@
-import { useRef, useState } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { ApparatusModel } from '../components/apparatus/ApparatusModel';
+
+function createAvatarBadgeTexture(name, isLocal, role, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.clearRect(0, 0, 512, 128);
+
+  const x = 32;
+  const y = 30;
+  const w = 448;
+  const h = 68;
+  const r = 34;
+
+  // Background pill with dark blue-gray aesthetic
+  ctx.save();
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.rect(x, y, w, h);
+  }
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+  ctx.fill();
+
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = isLocal ? color : '#475569';
+  ctx.stroke();
+
+  // Status indicator dot
+  ctx.beginPath();
+  ctx.arc(x + 36, y + h / 2, 7, 0, Math.PI * 2);
+  ctx.fillStyle = isLocal ? '#22c55e' : color;
+  ctx.fill();
+
+  // Name Text
+  ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, x + 56, y + h / 2);
+
+  // Role / Tag Pill
+  const roleText = isLocal ? 'YOU' : role.toUpperCase();
+  ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const roleWidth = ctx.measureText(roleText).width;
+  const rolePillW = roleWidth + 16;
+  const rolePillX = x + w - rolePillW - 20;
+  const rolePillY = y + 18;
+  const rolePillH = 32;
+
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(rolePillX, rolePillY, rolePillW, rolePillH, 8);
+  } else {
+    ctx.rect(rolePillX, rolePillY, rolePillW, rolePillH);
+  }
+  ctx.fillStyle = isLocal ? 'rgba(56, 189, 248, 0.22)' : 'rgba(255, 255, 255, 0.12)';
+  ctx.fill();
+
+  ctx.fillStyle = isLocal ? '#38bdf8' : '#94a3b8';
+  ctx.fillText(roleText, rolePillX + 8, y + h / 2);
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  return texture;
+}
 
 /**
  * Visual 3D Avatar Representation.
@@ -42,19 +111,20 @@ export function PlayerAvatar({
 
   // Animation cycle accumulator
   const animPhase = useRef(0);
-  const [motionTag, setMotionTag] = useState('');
-  const lastTag = useRef('');
+
+  const badgeTexture = useMemo(() => {
+    return createAvatarBadgeTexture(name, isLocal, role, color);
+  }, [name, isLocal, role, color]);
+
+  useEffect(() => {
+    return () => {
+      badgeTexture?.dispose();
+    };
+  }, [badgeTexture]);
 
   useFrame((state, delta) => {
     const isMoving = movementRef ? movementRef.current.isMoving : movementState?.isMoving;
     const isRunning = movementRef ? movementRef.current.isRunning : movementState?.isRunning;
-
-    // Update motion tag state only on change
-    const nextTag = isMoving ? (isRunning ? 'RUNNING' : 'WALKING') : '';
-    if (nextTag !== lastTag.current) {
-      lastTag.current = nextTag;
-      setMotionTag(nextTag);
-    }
 
     // Advance animation phase based on movement speed
     if (isMoving) {
@@ -292,109 +362,12 @@ export function PlayerAvatar({
         </group>
       </group>
 
-      {/* ================= FLOATING USERNAME / NAMEPLATE ================= */}
-      <Html
-        position={[0, 1.82, 0]}
-        center
-        distanceFactor={8}
-        zIndexRange={[100, 0]}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '2px',
-            transform: 'translate3d(0, 0, 0)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {/* Main Nameplate Bubble */}
-          <div
-            style={{
-              background: 'rgba(15, 23, 42, 0.82)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              border: `1px solid ${isLocal ? color : '#475569'}`,
-              borderRadius: '12px',
-              padding: '2px 8px',
-              color: '#ffffff',
-              fontSize: '10px',
-              fontWeight: 600,
-              letterSpacing: '0.1px',
-              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            {/* Role indicator icon or status dot */}
-            <span
-              style={{
-                width: '5px',
-                height: '5px',
-                borderRadius: '50%',
-                backgroundColor: isLocal ? '#22c55e' : color,
-                boxShadow: isLocal ? '0 0 4px #22c55e' : 'none',
-                display: 'inline-block',
-              }}
-            />
-
-            {/* Configurable Name */}
-            <span>{name}</span>
-
-            {/* Local "(You)" Tag or Role Badge */}
-            {isLocal ? (
-              <span
-                style={{
-                  fontSize: '8px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  color: '#38bdf8',
-                  background: 'rgba(56, 189, 248, 0.18)',
-                  padding: '0.5px 3.5px',
-                  borderRadius: '3px',
-                  letterSpacing: '0.3px',
-                }}
-              >
-                YOU
-              </span>
-            ) : (
-              <span
-                style={{
-                  fontSize: '8px',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  color: '#94a3b8',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  padding: '0.5px 3.5px',
-                  borderRadius: '3px',
-                }}
-              >
-                {isTeacher ? 'TEACHER' : 'STUDENT'}
-              </span>
-            )}
-          </div>
-
-          {/* Activity / Movement Sub-badge */}
-          {motionTag && (
-            <div
-              style={{
-                fontSize: '8px',
-                fontWeight: 600,
-                color: motionTag === 'RUNNING' ? '#f59e0b' : '#38bdf8',
-                background: 'rgba(15, 23, 42, 0.7)',
-                padding: '0.5px 5px',
-                borderRadius: '6px',
-                letterSpacing: '0.2px',
-              }}
-            >
-              {motionTag}
-            </div>
-          )}
-        </div>
-      </Html>
+      {/* ================= FLOATING USERNAME / NAMEPLATE (3D SPRITE) ================= */}
+      {badgeTexture && (
+        <sprite position={[0, 1.88, 0]} scale={[1.2, 0.3, 1]}>
+          <spriteMaterial map={badgeTexture} transparent depthWrite={false} />
+        </sprite>
+      )}
       </group>
     </group>
   );

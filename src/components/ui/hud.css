@@ -1,0 +1,278 @@
+/* Modern Professional Scientific Laboratory Interface Styles */
+
+/* CSS Variables for Clean Scientific Instrumentation Theme */
+:root {
+  --hud-bg-dark: rgba(15, 23, 42, 0.88);
+  --hud-bg-panel: rgba(23, 33, 56, 0.92);
+  --hud-bg-card: rgba(30, 41, 67, 0.7);
+  --hud-border: rgba(148, 163, 184, 0.18);
+  --hud-border-highlight: rgba(56, 189, 248, 0.4);
+  --hud-text-primary: #f8fafc;
+  --hud-text-secondary: #cbd5e1;
+  --hud-text-muted: #94a3b8;
+  --hud-accent: #0284c7;
+  --hud-accent-glow: rgba(2, 132, 199, 0.35);
+  --hud-teal: #0d9488;
+  --hud-success: #10b981;
+  --hud-warning: #f59e0b;
+  --hud-danger: #ef4444;
+  --hud-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  --hud-radius-sm: 6px;
+  --hud-radius-md: 10px;
+  --hud-radius-lg: 14px;
+}
+
+/* Glassmorphism Surface Base */
+.hud-glass {
+  background: var(--hud-bg-dark);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius-md);
+  box-shadow: var(--hud-shadow);
+  color: var(--hud-text-primary);
+}
+
+.hud-glass-panel {
+  background: var(--hud-bg-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius-lg);
+  box-shadow: var(--hud-shadow);
+  color: var(--hud-text-primary);
+}
+
+/* Custom Clean Scrollbar */
+.hud-custom-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.hud-custom-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 4px;
+}
+.hud-custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
+}
+.hud-custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+/* Scientific Navigation & Buttons */
+.hud-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--hud-radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--hud-text-secondary);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  outline: none;
+}
+
+.hud-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.hud-nav-btn.active {
+  background: var(--hud-accent);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 2px 10px var(--hud-accent-glow);
+}
+
+.hud-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--hud-radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--hud-border);
+  color: var(--hud-text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.hud-action-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.hud-action-btn.primary {
+  background: var(--hud-accent);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 2px 10px var(--hud-accent-glow);
+}
+
+.hud-action-btn.primary:hover {
+  background: #0274b3;
+  box-shadow: 0 4px 14px var(--hud-accent-glow);
+}
+
+.hud-action-btn.success {
+  background: #059669;
+  border-color: #34d399;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.hud-action-btn.success:hover {
+  background: #047857;
+}
+
+.hud-action-btn.danger {
+  background: #dc2626;
+  border-color: #f87171;
+  color: #ffffff;
+}
+
+.hud-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Monospace Keyboard Shortcut Badges */
+.hud-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 5px;
+  min-width: 18px;
+  height: 18px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.hud-kbd.cyan {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #7dd3fc;
+}
+
+.hud-kbd.green {
+  background: rgba(52, 211, 153, 0.22);
+  border-color: rgba(52, 211, 153, 0.5);
+  color: #6ee7b7;
+}
+
+.hud-kbd.pink {
+  background: rgba(244, 114, 182, 0.22);
+  border-color: rgba(244, 114, 182, 0.5);
+  color: #f472b6;
+}
+
+.hud-kbd.purple {
+  background: rgba(167, 139, 250, 0.22);
+  border-color: rgba(167, 139, 250, 0.5);
+  color: #c4b5fd;
+}
+
+/* Scientific Badges & Tags */
+.hud-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hud-tag.cyan {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.hud-tag.teal {
+  background: rgba(20, 184, 166, 0.15);
+  color: #2dd4bf;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+}
+
+.hud-tag.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.hud-tag.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.hud-tag.slate {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Animations */
+@keyframes hudFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hudSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes hudPulseSubtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.hud-animate-fade {
+  animation: hudFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hud-animate-slide-right {
+  animation: hudSlideRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hud-pulse {
+  animation: hudPulseSubtle 2s infinite ease-in-out;
+}
