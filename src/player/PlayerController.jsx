@@ -55,14 +55,14 @@ export function PlayerController({
   // Camera Look & Orbital Angles
   // yaw = 0 faces -Z (toward front blackboard)
   const cameraYaw = useRef(0);
-  const cameraPitch = useRef(0); // 0 = eye level
-  const cameraDistance = useRef(3.8); // 3rd-person follow distance
+  const cameraPitch = useRef(-0.15); // Slight natural downward glance toward tabletop
+  const cameraDistance = useRef(2.6); // 3rd-person follow distance
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
 
   // Camera damping targets for 3rd person
-  const cameraTarget = useRef(new THREE.Vector3(0, 1.35, 8.5));
-  const desiredCamPos = useRef(new THREE.Vector3(0, 2.5, 12.0));
+  const cameraTarget = useRef(new THREE.Vector3(0, 1.25, 8.5));
+  const desiredCamPos = useRef(new THREE.Vector3(0, 2.2, 11.0));
 
   // Handle teleportation to stations or points
   useEffect(() => {
@@ -74,7 +74,8 @@ export function PlayerController({
         targetRotY.current = teleportTarget.rotY;
         cameraYaw.current = teleportTarget.rotY;
       }
-      cameraPitch.current = isFirstPerson ? 0 : 0.28;
+      // When at workstation, look slightly downward (-0.22 rad) so bench equipment is in view
+      cameraPitch.current = isFirstPerson ? -0.22 : 0.28;
     }
   }, [teleportTarget, isFirstPerson]);
 
@@ -312,7 +313,7 @@ export function PlayerController({
     } else {
       // Third-Person POV orbiting behind player
       const targetX = currentPos.current.x;
-      const targetY = 1.35;
+      const targetY = 1.30;
       const targetZ = currentPos.current.z;
 
       cameraTarget.current.set(targetX, targetY, targetZ);
@@ -325,7 +326,8 @@ export function PlayerController({
       const offsetY = Math.sin(pitch) * dist;
       const offsetZ = Math.cos(yaw) * Math.cos(pitch) * dist;
 
-      const targetCamY = Math.max(0.45, targetY + offsetY);
+      // Keep camera above tabletop height (0.92m) to prevent under-table clipping
+      const targetCamY = Math.max(0.75, targetY + offsetY);
       desiredCamPos.current.set(targetX + offsetX, targetCamY, targetZ + offsetZ);
 
       camera.position.lerp(desiredCamPos.current, Math.min(1.0, dt * 8.0));

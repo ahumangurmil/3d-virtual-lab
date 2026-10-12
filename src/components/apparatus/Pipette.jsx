@@ -25,11 +25,23 @@ export function Pipette({
       {/* Bench Pipette Rest (Stable weighted stand holding pipette at 70° angle) */}
       <mesh position={[0, 0.01, 0]} receiveShadow castShadow>
         <boxGeometry args={[0.07, 0.02, 0.12]} />
-        <meshStandardMaterial color="#334155" roughness={0.5} metalness={0.2} />
+        <meshStandardMaterial
+          color={isSelected ? '#1e3a5f' : '#334155'}
+          roughness={0.5}
+          metalness={0.2}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.25 : isHovered ? 0.12 : 0}
+        />
       </mesh>
       <mesh position={[0, 0.04, 0.02]} receiveShadow castShadow>
         <boxGeometry args={[0.04, 0.06, 0.02]} />
-        <meshStandardMaterial color="#475569" roughness={0.4} metalness={0.3} />
+        <meshStandardMaterial
+          color={isSelected ? '#2563eb' : '#475569'}
+          roughness={0.4}
+          metalness={0.3}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.2 : isHovered ? 0.1 : 0}
+        />
       </mesh>
       {/* Pipette cradle notch */}
       <mesh position={[0, 0.07, 0.02]}>
@@ -42,24 +54,41 @@ export function Pipette({
         {/* Lower Delivery Stem */}
         <mesh position={[0, -0.07, 0]} castShadow>
           <cylinderGeometry args={[stemRadius, stemRadius * 0.5, 0.1, 16, 1, true]} />
-          <GlassMaterial isSelected={isSelected} isHovered={isHovered} />
+          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.48} />
         </mesh>
+
+        {/* Lower stem liquid if filled */}
+        {fillRatio > 0 && (
+          <mesh position={[0, -0.07, 0]}>
+            <cylinderGeometry args={[stemRadius * 0.82, stemRadius * 0.42, 0.098, 14]} />
+            <meshStandardMaterial
+              color={liquidColor}
+              roughness={0.15}
+              transparent
+              opacity={0.88}
+              emissive={liquidColor}
+              emissiveIntensity={0.06}
+            />
+          </mesh>
+        )}
 
         {/* Central Volumetric Bulb */}
         <mesh position={[0, 0, 0]} castShadow>
           <sphereGeometry args={[bulbRadius, 24, 16]} />
-          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.3} />
+          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.4} />
         </mesh>
 
         {/* Liquid inside bulb if present */}
         {fillRatio > 0 && (
-          <mesh position={[0, -bulbRadius * (1 - fillRatio), 0]}>
-            <sphereGeometry args={[bulbRadius * 0.92 * Math.min(1, fillRatio * 1.2), 16, 16]} />
+          <mesh position={[0, -bulbRadius * (1 - fillRatio) * 0.5, 0]}>
+            <sphereGeometry args={[bulbRadius * 0.94 * Math.min(1, fillRatio * 1.15), 18, 16]} />
             <meshStandardMaterial
               color={liquidColor}
-              roughness={0.2}
+              roughness={0.12}
               transparent
-              opacity={0.8}
+              opacity={0.9}
+              emissive={liquidColor}
+              emissiveIntensity={0.08}
             />
           </mesh>
         )}
@@ -67,12 +96,12 @@ export function Pipette({
         {/* Upper Suction Stem */}
         <mesh position={[0, 0.07, 0]} castShadow>
           <cylinderGeometry args={[stemRadius, stemRadius, 0.1, 16, 1, true]} />
-          <GlassMaterial isSelected={isSelected} isHovered={isHovered} />
+          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.48} />
         </mesh>
 
         {/* Calibration Ring Etching (25 mL mark) */}
         <mesh position={[0, 0.08, 0]}>
-          <torusGeometry args={[stemRadius * 1.05, 0.0008, 8, 20]} />
+          <torusGeometry args={[stemRadius * 1.05, 0.0009, 8, 20]} />
           <meshBasicMaterial color="#38bdf8" />
         </mesh>
 

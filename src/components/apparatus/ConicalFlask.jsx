@@ -67,14 +67,20 @@ export function ConicalFlask({
 
       {/* Flask Lip Rim */}
       <mesh position={[0, totalHeight, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[neckRadius * 1.05, 0.0025, 10, 24]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.12} transparent opacity={0.65} />
+        <torusGeometry args={[neckRadius * 1.06, 0.003, 12, 28]} />
+        <meshStandardMaterial
+          color={isSelected ? '#7dd3fc' : isHovered ? '#bae6fd' : '#f8fafc'}
+          roughness={0.1}
+          metalness={0.1}
+          transparent
+          opacity={0.85}
+        />
       </mesh>
 
       {/* White Frosted Label Patch (Erlenmeyer write-on area) */}
       <mesh position={[0, bodyHeight * 0.58, baseRadius * 0.55]} rotation={[-0.32, 0, 0]}>
-        <planeGeometry args={[0.026, 0.024]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.55} side={THREE.DoubleSide} />
+        <planeGeometry args={[0.028, 0.026]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.7} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Graduation Volume Markings */}
@@ -82,8 +88,8 @@ export function ConicalFlask({
         const rAtH = baseRadius - ((baseRadius - neckRadius) * (gh / bodyHeight));
         return (
           <mesh key={gidx} position={[rAtH * 0.98, gh, 0]} rotation={[-0.32, 0, 0]}>
-            <planeGeometry args={[0.0015, 0.012]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.7} side={THREE.DoubleSide} />
+            <planeGeometry args={[0.002, 0.015]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.88} side={THREE.DoubleSide} />
           </mesh>
         );
       })}
@@ -98,11 +104,14 @@ export function ConicalFlask({
             <meshPhysicalMaterial
               color={liquid.color || '#ec4899'}
               transparent
-              opacity={0.82}
-              roughness={0.1}
-              metalness={0.02}
-              transmission={0.55}
+              opacity={0.88}
+              roughness={0.10}
+              metalness={0.04}
+              transmission={0.32}
               ior={1.33}
+              clearcoat={0.6}
+              emissive={liquid.color || '#ec4899'}
+              emissiveIntensity={0.08}
             />
           </mesh>
           {/* Surface Meniscus */}
@@ -112,7 +121,17 @@ export function ConicalFlask({
               color={liquid.color || '#ec4899'}
               roughness={0.06}
               transparent
-              opacity={0.88}
+              opacity={0.94}
+            />
+          </mesh>
+          {/* Surface Meniscus Rim Ring */}
+          <mesh position={[0, liquidHeight / 2 + 0.0005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[liquidTopRadius * 0.88, liquidTopRadius * 0.96, 28]} />
+            <meshBasicMaterial
+              color={liquid.color || '#ec4899'}
+              transparent
+              opacity={0.65}
+              side={THREE.DoubleSide}
             />
           </mesh>
         </group>
@@ -124,18 +143,18 @@ export function ConicalFlask({
           <mesh>
             <circleGeometry args={[baseRadius * 1.35, 32]} />
             <meshBasicMaterial
-              color="#0284c7"
+              color={isSelected ? '#0284c7' : '#0d9488'}
               transparent
-              opacity={isSelected ? 0.18 : 0.08}
+              opacity={isSelected ? 0.22 : 0.12}
               side={THREE.DoubleSide}
             />
           </mesh>
           <mesh>
-            <ringGeometry args={[baseRadius * 1.25, baseRadius * 1.35, 32]} />
+            <ringGeometry args={[baseRadius * 1.25, baseRadius * 1.36, 32]} />
             <meshBasicMaterial
-              color="#0284c7"
+              color={isSelected ? '#0284c7' : '#0d9488'}
               transparent
-              opacity={isSelected ? 0.85 : 0.4}
+              opacity={isSelected ? 0.9 : 0.6}
               side={THREE.DoubleSide}
             />
           </mesh>

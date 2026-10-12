@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import * as THREE from 'three';
 
 /**
  * Reusable Interactive Apparatus Wrapper.
@@ -31,6 +32,18 @@ export function InteractiveApparatus({
   const [px, py, pz] = apparatus.position || [0, 0, 0];
   const [rx, ry, rz] = apparatus.rotation || [0, 0, 0];
 
+  // Dynamic footprint radius based on apparatus dimensions
+  const footprintRadius =
+    apparatus.type === 'test_tube_rack'
+      ? 0.16
+      : apparatus.type === 'burette_50'
+      ? 0.12
+      : apparatus.type === 'beaker_500'
+      ? 0.105
+      : apparatus.type === 'bunsen_burner'
+      ? 0.085
+      : 0.075;
+
   return (
     <group
       ref={groupRef}
@@ -53,25 +66,27 @@ export function InteractiveApparatus({
         document.body.style.cursor = 'default';
       }}
     >
-      {/* ================= 1. SUBTLE COUNTERTOP HIGHLIGHT RING ================= */}
+      {/* ================= 1. COUNTERTOP TARGETING & FOCUS HIGHLIGHT ================= */}
       {isHighlighted && (
         <group position={[0, 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           {/* Inner accent ring */}
           <mesh>
-            <ringGeometry args={[0.09, 0.115, 32]} />
+            <ringGeometry args={[footprintRadius * 1.05, footprintRadius * 1.2, 32]} />
             <meshBasicMaterial
-              color={isSelected ? '#0284c7' : '#0d9488'}
+              color={isSelected ? '#0284c7' : isTargeted ? '#38bdf8' : '#0d9488'}
               transparent
-              opacity={isSelected ? 0.85 : 0.65}
+              opacity={isSelected ? 0.95 : isTargeted ? 0.8 : 0.6}
+              side={THREE.DoubleSide}
             />
           </mesh>
           {/* Soft luminous disc glow */}
           <mesh>
-            <circleGeometry args={[0.09, 32]} />
+            <circleGeometry args={[footprintRadius * 1.05, 32]} />
             <meshBasicMaterial
-              color={isSelected ? '#0284c7' : '#0d9488'}
+              color={isSelected ? '#0284c7' : isTargeted ? '#38bdf8' : '#0d9488'}
               transparent
-              opacity={0.12}
+              opacity={isSelected ? 0.18 : isTargeted ? 0.14 : 0.08}
+              side={THREE.DoubleSide}
             />
           </mesh>
         </group>

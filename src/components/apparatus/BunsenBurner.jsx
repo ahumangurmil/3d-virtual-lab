@@ -41,9 +41,11 @@ export function BunsenBurner({
       <mesh position={[0, 0.008, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[baseRadius * 0.85, baseRadius, 0.016, 24]} />
         <meshStandardMaterial
-          color="#334155"
-          roughness={0.65}
+          color={isSelected ? '#1e3a5f' : '#334155'}
+          roughness={0.6}
           metalness={0.4}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.25 : isHovered ? 0.12 : 0}
         />
       </mesh>
 
@@ -51,7 +53,7 @@ export function BunsenBurner({
       <mesh position={[0, 0.02, 0]} castShadow>
         <cylinderGeometry args={[0.018, 0.022, 0.012, 16]} />
         <meshStandardMaterial
-          color="#94a3b8"
+          color={isSelected ? '#38bdf8' : '#94a3b8'}
           roughness={0.3}
           metalness={0.7}
         />
@@ -71,16 +73,18 @@ export function BunsenBurner({
       <mesh position={[0, 0.038 + barrelHeight / 2, 0]} castShadow>
         <cylinderGeometry args={[barrelRadius, barrelRadius, barrelHeight, 24]} />
         <meshStandardMaterial
-          color="#cbd5e1"
-          roughness={0.3}
-          metalness={0.75}
+          color={isSelected ? '#e0f2fe' : '#cbd5e1'}
+          roughness={0.25}
+          metalness={0.8}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.2 : isHovered ? 0.08 : 0}
         />
       </mesh>
 
       {/* Top Barrel Rim */}
       <mesh position={[0, 0.038 + barrelHeight, 0]}>
         <torusGeometry args={[barrelRadius, 0.002, 8, 20]} />
-        <meshStandardMaterial color="#64748b" roughness={0.3} metalness={0.7} />
+        <meshStandardMaterial color="#94a3b8" roughness={0.2} metalness={0.8} />
       </mesh>
 
       {/* Gas Inlet Port Tube */}

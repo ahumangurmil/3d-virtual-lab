@@ -4,6 +4,23 @@
  * Provides the calculation engine for solutions, mixing, pouring, measuring, and reagents.
  */
 
+/**
+ * Chemistry Engine Architecture Overview:
+ * ---------------------------------------
+ * 1. Pure Domain Logic:
+ *    Completely decoupled from React, Three.js, WebGL canvas, and DOM lifecycles.
+ *    Deterministic calculations run in standard JavaScript environments.
+ * 2. Solution Representation:
+ *    A solution is modeled with dynamic state:
+ *    - volume (mL)
+ *    - components (list of chemical species with mass/moles and concentrations)
+ *    - pH, temperature (°C), visual hexColor, and indicator indicators.
+ * 3. Reactions & Mixing:
+ *    - transferLiquid(source, target, amount): handles volumetric liquid transfer.
+ *    - mixSolutions(solA, solB): evaluates acid-base neutralization and dynamic pH.
+ *    - evaluateSolutionProperties(): updates visible liquid color (e.g. phenolphthalein endpoints).
+ */
+
 import { getChemicalDefinition, createChemicalComponent } from './chemicals';
 import { evaluateSolutionProperties } from './reactions';
 

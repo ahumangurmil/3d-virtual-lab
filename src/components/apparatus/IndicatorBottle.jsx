@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import * as THREE from 'three';
 
 /**
  * Standard 50 mL Laboratory Dropper Reagent Bottle.
@@ -24,24 +25,41 @@ export function IndicatorBottle({
     <group ref={groupRef} position={[0, 0, 0]}>
       {/* Base selection outline ring */}
       {(isSelected || isHovered) && (
-        <mesh position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.05, radius * 1.18, 32]} />
-          <meshBasicMaterial color={isSelected ? '#38bdf8' : '#67e8f9'} />
-        </mesh>
+        <group position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[radius * 1.35, 32]} />
+          <meshBasicMaterial
+            color={isSelected ? '#0284c7' : '#0d9488'}
+            transparent
+            opacity={isSelected ? 0.22 : 0.12}
+            side={THREE.DoubleSide}
+          />
+          <mesh position={[0, 0, 0.001]}>
+            <ringGeometry args={[radius * 1.25, radius * 1.36, 32]} />
+            <meshBasicMaterial
+              color={isSelected ? '#0284c7' : '#0d9488'}
+              transparent
+              opacity={isSelected ? 0.9 : 0.6}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        </group>
       )}
 
       {/* Cylindrical Amber Glass Bottle Body */}
       <mesh position={[0, bodyHeight / 2, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[radius, radius, bodyHeight, 32]} />
         <meshPhysicalMaterial
-          color="#78350f"
-          roughness={0.15}
-          metalness={0.05}
-          transmission={0.65}
-          thickness={0.05}
+          color="#92400e"
+          roughness={0.12}
+          metalness={0.06}
+          transmission={0.58}
+          thickness={0.06}
           ior={1.54}
+          clearcoat={0.8}
           transparent
-          opacity={0.88}
+          opacity={0.92}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.25 : isHovered ? 0.12 : 0}
         />
       </mesh>
 
@@ -49,13 +67,14 @@ export function IndicatorBottle({
       <mesh position={[0, bodyHeight + 0.008, 0]} castShadow>
         <cylinderGeometry args={[neckRadius * 1.3, radius, 0.016, 32]} />
         <meshPhysicalMaterial
-          color="#78350f"
-          roughness={0.15}
-          metalness={0.05}
-          transmission={0.65}
+          color="#92400e"
+          roughness={0.12}
+          metalness={0.06}
+          transmission={0.58}
           thickness={0.05}
+          clearcoat={0.8}
           transparent
-          opacity={0.88}
+          opacity={0.92}
         />
       </mesh>
 
@@ -63,13 +82,14 @@ export function IndicatorBottle({
       <mesh position={[0, bodyHeight + 0.016 + neckHeight / 2, 0]} castShadow>
         <cylinderGeometry args={[neckRadius, neckRadius, neckHeight, 24]} />
         <meshPhysicalMaterial
-          color="#78350f"
-          roughness={0.15}
-          metalness={0.05}
-          transmission={0.65}
+          color="#92400e"
+          roughness={0.12}
+          metalness={0.06}
+          transmission={0.58}
           thickness={0.04}
+          clearcoat={0.8}
           transparent
-          opacity={0.88}
+          opacity={0.92}
         />
       </mesh>
 

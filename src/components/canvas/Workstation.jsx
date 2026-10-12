@@ -27,9 +27,9 @@ export function Workstation({
   const topThickness = 0.04;
   const legRadius = 0.024;
 
-  // Visual tones
-  const counterColor = isTeacher ? '#f1f5f9' : '#e2e8f0';
-  const edgeTrimColor = isTeacher ? '#0284c7' : '#94a3b8';
+  // Visual tones with high contrast for glassware and fluid visibility
+  const counterColor = isTeacher ? '#f1f5f9' : '#cbd5e1';
+  const edgeTrimColor = isTeacher ? '#0284c7' : '#475569';
   const accentColor = isTeacher ? '#0284c7' : '#0d9488';
 
   return (

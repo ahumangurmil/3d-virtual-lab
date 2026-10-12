@@ -110,3 +110,13 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/ahumangurmil/3d-virtual-lab.git
+cd 3d-virtual-lab
+npm install
+npm run dev
+```
+
+Build for production:
+
+```bash
+npm run build
+```

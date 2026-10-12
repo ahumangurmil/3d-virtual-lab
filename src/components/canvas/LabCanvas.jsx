@@ -37,28 +37,35 @@ export function LabCanvas() {
         shadows
         camera={{
           position: [0, 10.5, 14.5],
-          fov: 48,
-          near: 0.1,
+          fov: 50,
+          near: 0.05,
           far: 75,
         }}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.12,
+          toneMappingExposure: 1.15,
         }}
         onPointerMissed={() => {
           // Deselect when clicking empty floor space
           selectApparatus(null);
         }}
       >
-        {/* ================= LIGHTING: UNIFORM CLASSROOM ILLUMINATION ================= */}
-        {/* Soft, cool ambient fill lighting across the entire 22m x 24m classroom */}
-        <ambientLight intensity={0.72} color="#f0f9ff" />
+        {/* ================= LIGHTING: BALANCED SCIENTIFIC SIMULATION ================= */}
+        {/* Hemisphere light: bright cool sky bounce above, neutral ground bounce below for natural depth */}
+        <hemisphereLight
+          skyColor="#ffffff"
+          groundColor="#475569"
+          intensity={0.62}
+        />
 
-        {/* Primary overhead daylight illumination (5000K daylight) */}
+        {/* Soft, cool ambient fill lighting across the entire 22m x 24m classroom */}
+        <ambientLight intensity={0.48} color="#f8fafc" />
+
+        {/* Primary overhead daylight illumination (5500K clean laboratory light) */}
         <directionalLight
-          position={[3, 14, 2]}
-          intensity={1.15}
+          position={[4, 15, 3]}
+          intensity={1.12}
           color="#fffdfa"
           castShadow
           shadow-mapSize-width={2048}
@@ -75,31 +82,61 @@ export function LabCanvas() {
         {/* Soft fill light from front teacher board perspective */}
         <directionalLight
           position={[0, 8, -10]}
-          intensity={0.45}
+          intensity={0.42}
           color="#f8fafc"
         />
 
         {/* Diffused fill light from window wall (East/Right side) */}
         <directionalLight
           position={[12, 6, 0]}
-          intensity={0.4}
+          intensity={0.45}
           color="#e0f2fe"
         />
 
         {/* Rear student entrance fill light */}
         <directionalLight
           position={[0, 7, 12]}
-          intensity={0.35}
+          intensity={0.38}
           color="#f1f5f9"
         />
 
         {/* Dedicated task light for Teacher Demonstration bench */}
         <pointLight
           position={[0, 3.5, -8.0]}
-          intensity={0.5}
+          intensity={0.65}
           distance={8}
           decay={2}
           color="#ffffff"
+        />
+
+        {/* Dedicated task lights for Student Workstation rows (crisp glass reflections) */}
+        <pointLight
+          position={[-4.5, 3.2, -3.2]}
+          intensity={0.45}
+          distance={6.5}
+          decay={2}
+          color="#f8fafc"
+        />
+        <pointLight
+          position={[4.5, 3.2, -3.2]}
+          intensity={0.45}
+          distance={6.5}
+          decay={2}
+          color="#f8fafc"
+        />
+        <pointLight
+          position={[-4.5, 3.2, 1.4]}
+          intensity={0.45}
+          distance={6.5}
+          decay={2}
+          color="#f8fafc"
+        />
+        <pointLight
+          position={[4.5, 3.2, 1.4]}
+          intensity={0.45}
+          distance={6.5}
+          decay={2}
+          color="#f8fafc"
         />
 
         {/* ================= 3D CLASSROOM ENVIRONMENT & STORAGE ================= */}

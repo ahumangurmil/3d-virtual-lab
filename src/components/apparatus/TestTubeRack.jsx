@@ -52,16 +52,21 @@ export function TestTubeRack({
       <mesh position={[0, 0.008, 0]} castShadow receiveShadow>
         <boxGeometry args={[rackWidth, 0.014, rackDepth]} />
         <meshStandardMaterial
-          color={rackMaterialColor}
-          roughness={0.5}
+          color={isSelected ? '#d0e5f5' : rackMaterialColor}
+          roughness={0.45}
           metalness={0.05}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.25 : isHovered ? 0.12 : 0}
         />
       </mesh>
 
       {/* Base Accent Edge Trim */}
       <mesh position={[0, 0.003, rackDepth / 2 + 0.001]}>
         <boxGeometry args={[rackWidth, 0.005, 0.002]} />
-        <meshStandardMaterial color={rackAccentColor} roughness={0.4} />
+        <meshStandardMaterial
+          color={isSelected ? '#0284c7' : rackAccentColor}
+          roughness={0.3}
+        />
       </mesh>
 
       {/* Middle Support Rail */}
@@ -69,7 +74,7 @@ export function TestTubeRack({
         <boxGeometry args={[rackWidth, 0.01, rackDepth]} />
         <meshStandardMaterial
           color={rackMaterialColor}
-          roughness={0.5}
+          roughness={0.45}
           metalness={0.05}
         />
       </mesh>
@@ -79,8 +84,10 @@ export function TestTubeRack({
         <boxGeometry args={[rackWidth, 0.012, rackDepth]} />
         <meshStandardMaterial
           color={rackMaterialColor}
-          roughness={0.5}
+          roughness={0.45}
           metalness={0.05}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.2 : isHovered ? 0.08 : 0}
         />
       </mesh>
 
@@ -106,22 +113,27 @@ export function TestTubeRack({
             {/* Tube Glass Wall */}
             <mesh position={[0, tubeHeight / 2, 0]} castShadow>
               <cylinderGeometry args={[tubeRadius, tubeRadius, tubeHeight, 20, 1, true]} />
-              <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.32} />
+              <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.45} />
             </mesh>
 
             {/* Rounded Hemispherical Bottom */}
             <mesh position={[0, 0, 0]} rotation={[Math.PI, 0, 0]}>
               <sphereGeometry args={[tubeRadius, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-              <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.4} />
+              <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.55} />
             </mesh>
 
             {/* Flared Glass Top Rim */}
             <mesh position={[0, tubeHeight, 0]} rotation={[Math.PI / 2, 0, 0]}>
               <torusGeometry args={[tubeRadius * 1.05, 0.002, 8, 16]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.12} transparent opacity={0.65} />
+              <meshStandardMaterial
+                color={isSelected ? '#7dd3fc' : isHovered ? '#bae6fd' : '#ffffff'}
+                roughness={0.1}
+                transparent
+                opacity={0.8}
+              />
             </mesh>
 
-            {/* Liquid Solution */}
+            {/* Liquid Solution with High Visual Contrast */}
             {fillHeight > 0.008 && (
               <group position={[0, fillHeight / 2, 0]}>
                 <mesh>
@@ -131,16 +143,30 @@ export function TestTubeRack({
                   <meshPhysicalMaterial
                     color={tubeData.color}
                     transparent
-                    opacity={0.82}
+                    opacity={0.88}
                     roughness={0.12}
-                    transmission={0.5}
+                    metalness={0.04}
+                    transmission={0.28}
                     ior={1.33}
+                    clearcoat={0.5}
+                    emissive={tubeData.color}
+                    emissiveIntensity={0.08}
                   />
                 </mesh>
                 {/* Meniscus */}
                 <mesh position={[0, fillHeight / 2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                   <circleGeometry args={[tubeRadius * 0.88, 16]} />
-                  <meshStandardMaterial color={tubeData.color} roughness={0.08} transparent opacity={0.9} />
+                  <meshStandardMaterial
+                    color={tubeData.color}
+                    roughness={0.08}
+                    transparent
+                    opacity={0.94}
+                  />
+                </mesh>
+                {/* Meniscus Rim */}
+                <mesh position={[0, fillHeight / 2 + 0.0003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                  <ringGeometry args={[tubeRadius * 0.72, tubeRadius * 0.88, 16]} />
+                  <meshBasicMaterial color={tubeData.color} transparent opacity={0.7} side={THREE.DoubleSide} />
                 </mesh>
               </group>
             )}
@@ -154,18 +180,18 @@ export function TestTubeRack({
           <mesh>
             <planeGeometry args={[rackWidth * 1.25, rackDepth * 1.4]} />
             <meshBasicMaterial
-              color="#0284c7"
+              color={isSelected ? '#0284c7' : '#0d9488'}
               transparent
-              opacity={isSelected ? 0.16 : 0.08}
+              opacity={isSelected ? 0.22 : 0.12}
               side={THREE.DoubleSide}
             />
           </mesh>
           <mesh>
-            <ringGeometry args={[rackWidth * 0.55, rackWidth * 0.6, 32]} />
+            <ringGeometry args={[rackWidth * 0.55, rackWidth * 0.62, 32]} />
             <meshBasicMaterial
-              color="#0284c7"
+              color={isSelected ? '#0284c7' : '#0d9488'}
               transparent
-              opacity={isSelected ? 0.85 : 0.35}
+              opacity={isSelected ? 0.9 : 0.55}
               side={THREE.DoubleSide}
             />
           </mesh>

@@ -71,32 +71,39 @@ export function Beaker({
 
       {/* Top Rim Lip */}
       <mesh position={[0, height, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[radius, 0.0025, 10, 32]} />
+        <torusGeometry args={[radius, 0.003, 12, 32]} />
         <meshStandardMaterial
-          color="#ffffff"
-          roughness={0.12}
+          color={isSelected ? '#7dd3fc' : isHovered ? '#bae6fd' : '#f8fafc'}
+          roughness={0.1}
+          metalness={0.1}
           transparent
-          opacity={0.65}
+          opacity={0.85}
         />
       </mesh>
 
       {/* Pouring Spout Characteristic Notch */}
-      <mesh position={[0, height - 0.004, radius + 0.006]} rotation={[0.4, 0, 0]}>
-        <coneGeometry args={[0.012, 0.018, 12, 1, true]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.12} transparent opacity={0.65} side={THREE.DoubleSide} />
+      <mesh position={[0, height - 0.004, radius + 0.005]} rotation={[0.38, 0, 0]}>
+        <coneGeometry args={[0.014, 0.02, 12, 1, true]} />
+        <meshStandardMaterial
+          color={isSelected ? '#7dd3fc' : isHovered ? '#bae6fd' : '#f8fafc'}
+          roughness={0.1}
+          transparent
+          opacity={0.85}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
       {/* White Frosted Marking Patch (Classic School Lab Glassware) */}
       <mesh position={[0, height * 0.55, radius * 0.99]} rotation={[0, 0, 0]}>
-        <planeGeometry args={[0.024, 0.035]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.55} side={THREE.DoubleSide} />
+        <planeGeometry args={[0.026, 0.038]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.7} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Graduation Marks */}
+      {/* Graduation Marks with High Contrast */}
       {graduationMarks.map((mark, index) => (
         <mesh key={index} position={[radius * 0.99, mark.y, 0]} rotation={[0, 0, 0]}>
-          <planeGeometry args={[0.0015, mark.width]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.75} side={THREE.DoubleSide} />
+          <planeGeometry args={[0.002, mark.width]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.9} side={THREE.DoubleSide} />
         </mesh>
       ))}
 
@@ -108,11 +115,14 @@ export function Beaker({
             <meshPhysicalMaterial
               color={liquid.color || '#0284c7'}
               transparent
-              opacity={0.8}
+              opacity={0.88}
               roughness={0.12}
-              metalness={0.02}
-              transmission={0.55}
+              metalness={0.04}
+              transmission={0.32}
               ior={1.33} // Water refractive index
+              clearcoat={0.6}
+              emissive={liquid.color || '#0284c7'}
+              emissiveIntensity={0.06}
             />
           </mesh>
           {/* Meniscus surface */}
@@ -122,7 +132,17 @@ export function Beaker({
               color={liquid.color || '#0284c7'}
               roughness={0.06}
               transparent
-              opacity={0.88}
+              opacity={0.94}
+            />
+          </mesh>
+          {/* Surface Meniscus Boundary Ring */}
+          <mesh position={[0, liquidHeight / 2 + 0.0005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[liquidRadius * 0.88, liquidRadius, 28]} />
+            <meshBasicMaterial
+              color={liquid.color || '#0284c7'}
+              transparent
+              opacity={0.65}
+              side={THREE.DoubleSide}
             />
           </mesh>
         </group>
@@ -135,19 +155,19 @@ export function Beaker({
           <mesh>
             <circleGeometry args={[radius * 1.35, 32]} />
             <meshBasicMaterial
-              color="#0284c7"
+              color={isSelected ? '#0284c7' : '#0d9488'}
               transparent
-              opacity={isSelected ? 0.18 : 0.08}
+              opacity={isSelected ? 0.22 : 0.12}
               side={THREE.DoubleSide}
             />
           </mesh>
           {/* Clean target outline ring */}
           <mesh>
-            <ringGeometry args={[radius * 1.25, radius * 1.35, 32]} />
+            <ringGeometry args={[radius * 1.25, radius * 1.36, 32]} />
             <meshBasicMaterial
-              color="#0284c7"
+              color={isSelected ? '#0284c7' : '#0d9488'}
               transparent
-              opacity={isSelected ? 0.85 : 0.4}
+              opacity={isSelected ? 0.9 : 0.6}
               side={THREE.DoubleSide}
             />
           </mesh>

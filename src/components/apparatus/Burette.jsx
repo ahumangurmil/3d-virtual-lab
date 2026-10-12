@@ -21,15 +21,15 @@ export function Burette({
 
   // Retort Stand geometry
   const baseWidth = 0.18;
-  const baseDepth = 0.13;
-  const rodHeight = 0.64;
+  const baseDepth = 0.14;
+  const rodHeight = 0.72;
   const rodRadius = 0.0055;
 
   // Burette tube geometry
   const buretteRadius = 0.012;
   const buretteLength = 0.48;
-  const clampHeight = 0.28;
-  const buretteY = 0.12; // Bottom of jet relative to table
+  const clampHeight = 0.35;
+  const buretteY = 0.175; // Raised so conical flask easily fits underneath
 
   // Liquid level (0 mL is at the top, 50 mL is at the bottom in a real burette!)
   const maxVol = liquid?.maxVolume || 50;
@@ -45,26 +45,34 @@ export function Burette({
       <mesh position={[0, 0.01, 0]} castShadow receiveShadow>
         <boxGeometry args={[baseWidth, 0.02, baseDepth]} />
         <meshStandardMaterial
-          color="#334155"
-          roughness={0.65}
+          color={isSelected ? '#1e3a5f' : '#334155'}
+          roughness={0.6}
           metalness={0.4}
+          emissive={isSelected ? '#0284c7' : isHovered ? '#38bdf8' : '#000000'}
+          emissiveIntensity={isSelected ? 0.25 : isHovered ? 0.12 : 0}
         />
       </mesh>
 
+      {/* Classical White Porcelain Titration Tile (Placed on base plate under burette nozzle to spot color change) */}
+      <mesh position={[0.01, 0.021, 0.01]} receiveShadow>
+        <boxGeometry args={[0.095, 0.002, 0.095]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.15} metalness={0.05} />
+      </mesh>
+
       {/* Upright Steel Rod (Mounted off-center towards back-left of base) */}
-      <mesh position={[-0.05, 0.02 + rodHeight / 2, -0.03]} castShadow>
+      <mesh position={[-0.055, 0.02 + rodHeight / 2, -0.035]} castShadow>
         <cylinderGeometry args={[rodRadius, rodRadius, rodHeight, 16]} />
         <meshStandardMaterial color="#cbd5e1" roughness={0.25} metalness={0.85} />
       </mesh>
 
       {/* Rod Top Cap */}
-      <mesh position={[-0.05, 0.02 + rodHeight, -0.03]}>
+      <mesh position={[-0.055, 0.02 + rodHeight, -0.035]}>
         <sphereGeometry args={[rodRadius * 1.2, 12, 12]} />
         <meshStandardMaterial color="#94a3b8" metalness={0.7} />
       </mesh>
 
       {/* ================= 2. BOSSHEAD & TWO-PRONG CLAMP ================= */}
-      <group position={[-0.05, clampHeight, -0.03]}>
+      <group position={[-0.055, clampHeight, -0.035]}>
         {/* Bosshead Body */}
         <mesh position={[0, 0, 0]} castShadow>
           <boxGeometry args={[0.026, 0.032, 0.026]} />
@@ -82,13 +90,13 @@ export function Burette({
         </mesh>
 
         {/* Extension Arm reaching forward towards burette position */}
-        <mesh position={[0.03, 0, 0.03]} rotation={[0, -Math.PI / 4, 0]}>
-          <boxGeometry args={[0.008, 0.01, 0.08]} />
+        <mesh position={[0.032, 0, 0.032]} rotation={[0, -Math.PI / 4, 0]}>
+          <boxGeometry args={[0.008, 0.01, 0.09]} />
           <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.3} />
         </mesh>
 
         {/* Clamp Prongs holding the glass tube */}
-        <group position={[0.05, 0, 0.05]}>
+        <group position={[0.055, 0, 0.035]}>
           <mesh rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[buretteRadius * 1.15, 0.0035, 8, 20, Math.PI * 1.4]} />
             <meshStandardMaterial color="#b91c1c" roughness={0.6} /> {/* Red rubber/cork jaw pads */}
@@ -101,8 +109,8 @@ export function Burette({
       <group position={[0, buretteY, 0]}>
         {/* Dispensing Tapered Jet Tip (bottom) */}
         <mesh position={[0, 0.025, 0]}>
-          <cylinderGeometry args={[0.002, 0.0012, 0.04, 16]} />
-          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.6} />
+          <cylinderGeometry args={[0.0024, 0.0012, 0.04, 16]} />
+          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.65} />
         </mesh>
 
         {/* PTFE / Teflon Stopcock Valve Body */}
@@ -127,13 +135,18 @@ export function Burette({
         {/* Main Graduated Borosilicate Tube */}
         <mesh position={[0, 0.075 + buretteLength / 2, 0]} castShadow>
           <cylinderGeometry args={[buretteRadius, buretteRadius, buretteLength, 24, 1, true]} />
-          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.3} />
+          <GlassMaterial isSelected={isSelected} isHovered={isHovered} opacity={0.42} />
         </mesh>
 
         {/* Top Funnel Lip */}
         <mesh position={[0, 0.075 + buretteLength, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[buretteRadius * 1.1, 0.002, 10, 24]} />
-          <meshPhysicalMaterial color="#ffffff" transmission={0.9} roughness={0.1} transparent opacity={0.7} />
+          <torusGeometry args={[buretteRadius * 1.1, 0.0025, 10, 24]} />
+          <meshStandardMaterial
+            color={isSelected ? '#7dd3fc' : isHovered ? '#bae6fd' : '#ffffff'}
+            roughness={0.1}
+            transparent
+            opacity={0.85}
+          />
         </mesh>
 
         {/* Printed Sub-milliliter Graduation Marks (Sample ticks along tube) */}
@@ -143,7 +156,7 @@ export function Burette({
             position={[0, 0.075 + buretteLength * fraction, buretteRadius + 0.0004]}
             rotation={[0, 0, 0]}
           >
-            <planeGeometry args={[idx % 2 === 0 ? 0.012 : 0.007, 0.0015]} />
+            <planeGeometry args={[idx % 2 === 0 ? 0.014 : 0.008, 0.0018]} />
             <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
           </mesh>
         ))}
@@ -157,7 +170,9 @@ export function Burette({
                 color={liquidColor}
                 roughness={0.1}
                 transparent
-                opacity={0.8}
+                opacity={0.88}
+                emissive={liquidColor}
+                emissiveIntensity={0.08}
               />
             </mesh>
             {/* Liquid Meniscus Curve at Top */}
@@ -167,8 +182,13 @@ export function Burette({
                 color={liquidColor}
                 roughness={0.08}
                 transparent
-                opacity={0.9}
+                opacity={0.94}
               />
+            </mesh>
+            {/* Meniscus Edge Ring */}
+            <mesh position={[0, liquidHeight + 0.0003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[buretteRadius * 0.78, buretteRadius * 0.9, 18]} />
+              <meshBasicMaterial color={liquidColor} transparent opacity={0.7} side={THREE.DoubleSide} />
             </mesh>
           </group>
         )}
