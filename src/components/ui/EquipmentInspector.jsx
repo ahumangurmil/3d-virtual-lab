@@ -16,6 +16,7 @@ export function EquipmentInspector() {
     heatApparatus,
     setCameraPreset,
     setControlMode,
+    titrationState,
   } = useLab();
 
   if (!selectedApparatus) {
@@ -23,6 +24,7 @@ export function EquipmentInspector() {
   }
 
   const isHeld = selectedApparatus.id === heldApparatusId;
+  const isTitrationActive = titrationState?.status === 'in_progress';
 
   return (
     <aside
@@ -325,7 +327,9 @@ export function EquipmentInspector() {
             max={selectedApparatus.liquid.maxVolume || selectedApparatus.capacity || 100}
             step="5"
             value={selectedApparatus.liquid.volume}
+            disabled={isTitrationActive}
             onChange={(e) => {
+              if (isTitrationActive) return;
               const newVol = Number(e.target.value);
               updateApparatusState(selectedApparatus.id, {
                 liquid: {
@@ -334,8 +338,18 @@ export function EquipmentInspector() {
                 },
               });
             }}
-            style={{ width: '100%', accentColor: 'var(--hud-accent)', cursor: 'pointer' }}
+            style={{
+              width: '100%',
+              accentColor: 'var(--hud-accent)',
+              cursor: isTitrationActive ? 'not-allowed' : 'pointer',
+              opacity: isTitrationActive ? 0.5 : 1,
+            }}
           />
+          {isTitrationActive && (
+            <div style={{ marginTop: '4px', fontSize: '10px', color: 'var(--hud-text-muted)' }}>
+              Volume slider disabled during guided practical
+            </div>
+          )}
         </div>
       )}
 
@@ -380,7 +394,13 @@ export function EquipmentInspector() {
           {heldApparatus && heldApparatus.id !== selectedApparatus.id && (heldApparatus.capacity || heldApparatus.liquid) && (
             <button
               type="button"
-              onClick={() => pourLiquid(heldApparatus.id, selectedApparatus.id, 25)}
+              onClick={() =>
+                pourLiquid(
+                  heldApparatus.id,
+                  selectedApparatus.id,
+                  heldApparatus.type === 'indicator_bottle' ? 2 : 25
+                )
+              }
               className="hud-action-btn"
               style={{
                 width: '100%',
@@ -389,7 +409,11 @@ export function EquipmentInspector() {
                 color: '#6ee7b7',
               }}
             >
-              <span>Pour 25 mL from {heldApparatus.name}</span>
+              <span>
+                {heldApparatus.type === 'indicator_bottle'
+                  ? `Add 3 Drops from ${heldApparatus.name}`
+                  : `Pour 25 mL from ${heldApparatus.name}`}
+              </span>
             </button>
           )}
 

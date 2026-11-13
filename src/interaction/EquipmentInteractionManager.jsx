@@ -6,6 +6,27 @@ import { validateApparatusPlacement } from './surfaces';
 import { isApparatusPickable } from './interactionTypes';
 import { PlacementIndicator } from './PlacementIndicator';
 
+function hasPlacementChanged(prev, next) {
+  if (prev === next) return false;
+  if (!prev || !next) return true;
+  if (
+    prev.isValid !== next.isValid ||
+    prev.surfaceId !== next.surfaceId ||
+    prev.surfaceName !== next.surfaceName ||
+    prev.reason !== next.reason
+  ) {
+    return true;
+  }
+  const prevPos = prev.snappedPosition;
+  const nextPos = next.snappedPosition;
+  if (!prevPos || !nextPos) return prevPos !== nextPos;
+  return (
+    Math.abs(prevPos[0] - nextPos[0]) >= 0.005 ||
+    Math.abs(prevPos[1] - nextPos[1]) >= 0.005 ||
+    Math.abs(prevPos[2] - nextPos[2]) >= 0.005
+  );
+}
+
 /**
  * Centralized Equipment Interaction Manager.
  * Handles:
@@ -38,9 +59,24 @@ export function EquipmentInteractionManager() {
     povMode,
   } = useLab();
 
-  // Bench height plane for mouse raycasting when placing apparatus
+  // Pre-allocated math objects & tracking refs to avoid per-frame GC allocations
   const benchPlane = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.92));
   const mouseIntersection = useRef(new THREE.Vector3());
+  const camDir = useRef(new THREE.Vector3());
+  const toCamVec = useRef(new THREE.Vector3());
+  const centerScreen = useRef(new THREE.Vector2(0, 0));
+  const targetPoint = useRef([0, 0.92, 0]);
+  const lastPlacementRef = useRef(placementState);
+  const lastValidationInputRef = useRef({
+    x: NaN,
+    z: NaN,
+    heldId: null,
+    apparatusList: null,
+  });
+
+  useEffect(() => {
+    lastPlacementRef.current = placementState;
+  }, [placementState]);
 
   // Global Keyboard listener for natural game-like interaction
   useEffect(() => {
@@ -66,15 +102,24 @@ export function EquipmentInteractionManager() {
       // [P] Key: Pour liquid from held container into targeted container (or aspirate into pipette)
       if (e.code === 'KeyP') {
         if (heldApparatusId && targetApparatusId) {
-          pourLiquid(heldApparatusId, targetApparatusId, 25);
+          const heldItem = heldApparatus || apparatusList.find((a) => a.id === heldApparatusId);
+          const amount = heldItem?.type === 'indicator_bottle' ? 2 : 25;
+          pourLiquid(heldApparatusId, targetApparatusId, amount);
         } else if (selectedId && targetApparatusId && selectedId !== targetApparatusId) {
-          pourLiquid(selectedId, targetApparatusId, 25);
+          const selectedItem = apparatusList.find((a) => a.id === selectedId);
+          const amount = selectedItem?.type === 'indicator_bottle' ? 2 : 25;
+          pourLiquid(selectedId, targetApparatusId, amount);
         }
       }
 
-      // [T] Key: Turn burette stopcock (dispense titrant into conical flask)
+      // [T] Key: Turn burette stopcock (5 mL gradual, or Shift+T for 0.1 mL drop)
       if (e.code === 'KeyT') {
-        turnBuretteStopcock(10);
+        turnBuretteStopcock(e.shiftKey ? 0.1 : 5);
+      }
+
+      // [G] Key: Dropwise burette stopcock (0.1 mL single drop)
+      if (e.code === 'KeyG') {
+        turnBuretteStopcock(0.1);
       }
 
       // [S] Key: Swirl conical flask
@@ -118,6 +163,7 @@ export function EquipmentInteractionManager() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     heldApparatusId,
+    heldApparatus,
     targetApparatusId,
     selectedId,
     apparatusList,
@@ -143,16 +189,15 @@ export function EquipmentInteractionManager() {
     const rotY = pState.rotation[1] || 0;
 
     // Get camera look direction in world space
-    const camDir = new THREE.Vector3();
-    camera.getWorldDirection(camDir);
+    camera.getWorldDirection(camDir.current);
 
     // Avatar forward direction in world space (-Z is front when rotY = 0)
     const avatarForwardX = -Math.sin(rotY);
     const avatarForwardZ = -Math.cos(rotY);
 
     const isFirstPerson = povMode === 'first-person';
-    const forwardX = isFirstPerson ? camDir.x : avatarForwardX;
-    const forwardZ = isFirstPerson ? camDir.z : avatarForwardZ;
+    const forwardX = isFirstPerson ? camDir.current.x : avatarForwardX;
+    const forwardZ = isFirstPerson ? camDir.current.z : avatarForwardZ;
     const fMag = Math.hypot(forwardX, forwardZ) || 1;
     const normForwardX = forwardX / fMag;
     const normForwardZ = forwardZ / fMag;
@@ -164,7 +209,7 @@ export function EquipmentInteractionManager() {
       let targetPlaceZ = pz + normForwardZ * 0.95;
 
       // In first-person or mouse mode, check if camera raycast hits benchtop within player reach (~2.5m)
-      raycaster.setFromCamera(isFirstPerson ? new THREE.Vector2(0, 0) : mouse, camera);
+      raycaster.setFromCamera(isFirstPerson ? centerScreen.current : mouse, camera);
       const hit = raycaster.ray.intersectPlane(benchPlane.current, mouseIntersection.current);
       if (hit) {
         const distFromPlayer = Math.hypot(hit.x - px, hit.z - pz);
@@ -174,16 +219,43 @@ export function EquipmentInteractionManager() {
         }
       }
 
-      // Validate prospective placement surface
-      const validation = validateApparatusPlacement(
-        [targetPlaceX, targetPlaceY, targetPlaceZ],
-        heldApparatus,
-        apparatusList
-      );
+      const lastInput = lastValidationInputRef.current;
+      const needsValidation =
+        lastPlacementRef.current === null ||
+        lastInput.heldId !== heldApparatusId ||
+        lastInput.apparatusList !== apparatusList ||
+        Math.abs(targetPlaceX - lastInput.x) >= 0.001 ||
+        Math.abs(targetPlaceZ - lastInput.z) >= 0.001;
 
-      setPlacementState(validation);
-    } else if (placementState !== null) {
-      setPlacementState(null);
+      if (needsValidation) {
+        lastInput.x = targetPlaceX;
+        lastInput.z = targetPlaceZ;
+        lastInput.heldId = heldApparatusId;
+        lastInput.apparatusList = apparatusList;
+
+        targetPoint.current[0] = targetPlaceX;
+        targetPoint.current[1] = targetPlaceY;
+        targetPoint.current[2] = targetPlaceZ;
+
+        // Validate prospective placement surface
+        const validation = validateApparatusPlacement(
+          targetPoint.current,
+          heldApparatus,
+          apparatusList
+        );
+
+        if (hasPlacementChanged(lastPlacementRef.current, validation)) {
+          lastPlacementRef.current = validation;
+          setPlacementState(validation);
+        }
+      }
+    } else if (lastPlacementRef.current !== null || placementState !== null) {
+      lastValidationInputRef.current.heldId = null;
+      lastValidationInputRef.current.apparatusList = null;
+      lastPlacementRef.current = null;
+      if (placementState !== null) {
+        setPlacementState(null);
+      }
     }
 
     // ================= 2. PROXIMITY & LINE-OF-SIGHT APPARATUS DETECTION =================
@@ -202,12 +274,10 @@ export function EquipmentInteractionManager() {
       if (dist > MAX_INTERACTION_DIST) continue;
 
       // 1. Line-of-sight check from camera
-      const toCamVec = new THREE.Vector3(
-        ix - camera.position.x,
-        iy - camera.position.y,
-        iz - camera.position.z
-      ).normalize();
-      const camDot = camDir.dot(toCamVec);
+      toCamVec.current
+        .set(ix - camera.position.x, iy - camera.position.y, iz - camera.position.z)
+        .normalize();
+      const camDot = camDir.current.dot(toCamVec.current);
 
       // 2. Forward direction check from avatar
       const dirX = dx / (dist || 1);

@@ -3,14 +3,11 @@ import * as THREE from 'three';
 import { GlassMaterial } from './GlassMaterial';
 
 export function TestTubeRack({
-  id,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   tubes = [],
   isSelected,
   isHovered,
-  onSelect,
-  onHover,
 }) {
   const groupRef = useRef();
 
@@ -32,20 +29,6 @@ export function TestTubeRack({
       ref={groupRef}
       position={[position[0], position[1] + (isHovered && !isSelected ? 0.005 : 0), position[2]]}
       rotation={rotation}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onSelect) onSelect(id);
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        if (onHover) onHover(id);
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={(e) => {
-        e.stopPropagation();
-        if (onHover) onHover(null);
-        document.body.style.cursor = 'default';
-      }}
     >
       {/* --- RACK STRUCTURE --- */}
       {/* Bottom Base Plate */}

@@ -18,13 +18,15 @@ export class TitrationExperimentState {
     this.currentStepIndex = 0;
     this.completedSteps = [];
 
-    // Equipment tracking
+    // Equipment tracking (student must physically collect/inspect each item)
+    this.verifiedEquipmentKeys = new Set();
     this.requiredEquipmentStatus = {};
     REQUIRED_TITRATION_EQUIPMENT.forEach((eq) => {
       this.requiredEquipmentStatus[eq.key] = {
         key: eq.key,
         name: eq.name,
         collected: false,
+        present: false,
         apparatusId: null,
       };
     });
@@ -34,11 +36,14 @@ export class TitrationExperimentState {
     this.hclConcentration = this.definition.config.analyte.concentration;
     this.naohVolume = 0;
     this.naohConcentration = this.definition.config.titrant.concentration;
+    this.buretteInitialVolume = this.definition.config.titrant.initialBuretteVolume;
+    this.buretteDispensedVolume = 0;
     this.indicatorAdded = false;
     this.endpointDetected = false;
     this.studentReading = '';
     this.burettePositioned = false;
     this.observedSwirl = false;
+    this.flaskSwirled = false;
 
     // Feedback and mistake alerts
     this.lastFeedback = {
@@ -117,37 +122,40 @@ export class TitrationExperimentState {
       ? apparatusList.filter((a) => a.workstationId === workstationId || !a.workstationId)
       : apparatusList;
 
-    // 1. Sync required equipment recognition
+    // 1. Sync required equipment recognition (presence on station vs verified by student)
     REQUIRED_TITRATION_EQUIPMENT.forEach((eq) => {
       const match = stationItems.find((a) => eq.matchTypes.includes(a.type));
-      if (match) {
-        this.requiredEquipmentStatus[eq.key] = {
-          key: eq.key,
-          name: eq.name,
-          collected: true,
-          apparatusId: match.id,
-        };
-      }
+      this.requiredEquipmentStatus[eq.key] = {
+        key: eq.key,
+        name: eq.name,
+        present: Boolean(match),
+        collected: Boolean(match && this.verifiedEquipmentKeys.has(eq.key)),
+        apparatusId: match ? match.id : null,
+      };
     });
 
     // 2. Sync Conical Flask contents
     const flask = stationItems.find((a) => a.type === 'conical_flask_250');
     if (flask && flask.liquid) {
       const components = flask.solution?.components || [];
-      const hasHcl = components.some((c) => c.chemicalId === 'hydrochloric-acid' || c.isAcid);
+      const hclComp = components.find((c) => c.chemicalId === 'hydrochloric-acid');
+      const naclComp = components.find((c) => c.chemicalId === 'sodium-chloride');
       const hasInd = flask.liquid.hasIndicator || components.some((c) => c.isIndicator);
 
-      if (hasHcl) {
+      if (hclComp && !naclComp) {
         this.hclVolume = flask.liquid.volume || 0;
-        this.hclConcentration = flask.concentration || this.hclConcentration;
+        this.hclConcentration = hclComp.concentration || flask.concentration || this.hclConcentration;
       }
 
       this.indicatorAdded = Boolean(hasInd);
 
-      // Endpoint detection based on indicator transition (pH >= 8.2 or color pink)
-      if (this.indicatorAdded && (flask.liquid.ph >= 8.0 || flask.liquid.color === 'pink' || flask.liquid.hexColor === '#ec4899')) {
-        this.endpointDetected = true;
-      }
+      // Endpoint detection based on phenolphthalein indicator transition (pH >= 8.2 or pink)
+      this.endpointDetected = Boolean(
+        this.indicatorAdded &&
+          (flask.liquid.ph >= this.definition.config.indicator.transitionPh ||
+            flask.liquid.color === 'pink' ||
+            flask.liquid.hexColor === '#ec4899')
+      );
     }
 
     // 3. Sync Burette contents
@@ -158,6 +166,14 @@ export class TitrationExperimentState {
       if (hasNaoh) {
         this.naohVolume = burette.liquid.volume || 0;
         this.naohConcentration = burette.concentration || this.naohConcentration;
+        if (this.completedSteps.includes(4)) {
+          this.buretteDispensedVolume = Math.max(
+            0,
+            Math.round((this.buretteInitialVolume - this.naohVolume) * 100) / 100
+          );
+        }
+      } else {
+        this.naohVolume = 0;
       }
     }
 
@@ -183,6 +199,8 @@ export class TitrationExperimentState {
       hclConcentration: this.hclConcentration,
       naohVolume: this.naohVolume,
       naohConcentration: this.naohConcentration,
+      buretteInitialVolume: this.buretteInitialVolume,
+      buretteDispensedVolume: this.buretteDispensedVolume,
       indicatorAdded: this.indicatorAdded,
       endpointDetected: this.endpointDetected,
       studentReading: this.studentReading,

@@ -22,7 +22,21 @@
  */
 
 import { getChemicalDefinition, createChemicalComponent } from './chemicals';
-import { evaluateSolutionProperties } from './reactions';
+import {
+  evaluateSolutionProperties,
+  applyStrongAcidBaseNeutralization,
+} from './reactions';
+
+function getSolutionTemp(sol) {
+  if (!sol) return 24.0;
+  if (typeof sol._exactTemperature === 'number') {
+    const roundedExact = Math.round(sol._exactTemperature * 10) / 10;
+    if (sol.temperature === undefined || Math.abs(sol.temperature - roundedExact) < 1e-6) {
+      return sol._exactTemperature;
+    }
+  }
+  return sol.temperature !== undefined ? sol.temperature : 24.0;
+}
 
 /**
  * Creates an empty solution state.
@@ -66,6 +80,7 @@ export function createInitialSolution({
     hexColor: evalProps.hexColor,
     ph: evalProps.ph,
     temperature: evalProps.temperature,
+    _exactTemperature: evalProps.exactTemperature,
     components: [comp],
     hasIndicator: comp.isIndicator,
   };
@@ -89,7 +104,7 @@ export function combineSolutions(solA, solB, volA = null, volB = null) {
     return createEmptySolution();
   }
 
-  // If one solution is empty, return scaled version of the other
+  // If one solution is empty, return scaled version of the other (no new reaction heat)
   if (takeA <= 0 && solB && takeB > 0) {
     const ratioB = takeB / (solB.volume || takeB);
     const scaledCompsB = (solB.components || []).map((c) => ({
@@ -97,7 +112,9 @@ export function combineSolutions(solA, solB, volA = null, volB = null) {
       volume: Math.round(c.volume * ratioB * 100) / 100,
       moles: c.moles * ratioB,
     }));
-    const evalProps = evaluateSolutionProperties(scaledCompsB, totalVol, solB.temperature || 24);
+    const evalProps = evaluateSolutionProperties(scaledCompsB, totalVol, getSolutionTemp(solB), {
+      reactedMoles: 0,
+    });
     return {
       volume: totalVol,
       contents: solB.contents || 'solution',
@@ -108,6 +125,7 @@ export function combineSolutions(solA, solB, volA = null, volB = null) {
       hexColor: evalProps.hexColor,
       ph: evalProps.ph,
       temperature: evalProps.temperature,
+      _exactTemperature: evalProps.exactTemperature,
       components: scaledCompsB,
       hasIndicator: evalProps.hasIndicator,
     };
@@ -120,7 +138,9 @@ export function combineSolutions(solA, solB, volA = null, volB = null) {
       volume: Math.round(c.volume * ratioA * 100) / 100,
       moles: c.moles * ratioA,
     }));
-    const evalProps = evaluateSolutionProperties(scaledCompsA, totalVol, solA.temperature || 24);
+    const evalProps = evaluateSolutionProperties(scaledCompsA, totalVol, getSolutionTemp(solA), {
+      reactedMoles: 0,
+    });
     return {
       volume: totalVol,
       contents: solA.contents || 'solution',
@@ -131,6 +151,7 @@ export function combineSolutions(solA, solB, volA = null, volB = null) {
       hexColor: evalProps.hexColor,
       ph: evalProps.ph,
       temperature: evalProps.temperature,
+      _exactTemperature: evalProps.exactTemperature,
       components: scaledCompsA,
       hasIndicator: evalProps.hasIndicator,
     };
@@ -165,27 +186,36 @@ export function combineSolutions(solA, solB, volA = null, volB = null) {
   if (solA && solA.components) addComps(solA.components, ratioA);
   if (solB && solB.components) addComps(solB.components, ratioB);
 
+  // Apply 1:1 stoichiometric consumption for HCl + NaOH -> NaCl + H2O
+  const { components: neutralizedComponents, reactedMoles } =
+    applyStrongAcidBaseNeutralization(Array.from(compMap.values()));
+
   // Recalculate component concentrations relative to new total volume
-  for (const comp of compMap.values()) {
+  for (const comp of neutralizedComponents) {
     const newConc = totalVol > 0 ? (comp.moles * 1000) / totalVol : 0;
     comp.concentration = Math.round(newConc * 1000) / 1000;
     comp.volume = Math.round(comp.volume * 100) / 100;
     mergedComponents.push(comp);
   }
 
-  // Weighted thermal mix
-  const tempA = solA?.temperature || 24;
-  const tempB = solB?.temperature || 24;
+  // Weighted thermal mix prior to this mixing step's heat of neutralization
+  const tempA = getSolutionTemp(solA);
+  const tempB = getSolutionTemp(solB);
   const avgTemp = (tempA * takeA + tempB * takeB) / totalVol;
 
-  const evalProps = evaluateSolutionProperties(mergedComponents, totalVol, avgTemp);
+  const evalProps = evaluateSolutionProperties(mergedComponents, totalVol, avgTemp, {
+    reactedMoles,
+  });
 
-  // Determine dominant chemical name / formula / concentration
-  let mainComp = mergedComponents[0] || null;
+  // Determine dominant non-water solute name / formula / concentration
+  let mainComp = null;
   for (const c of mergedComponents) {
     if (c.chemicalId !== 'water' && (!mainComp || c.moles > (mainComp.moles || 0))) {
       mainComp = c;
     }
+  }
+  if (!mainComp) {
+    mainComp = mergedComponents[0] || null;
   }
 
   return {
@@ -198,6 +228,7 @@ export function combineSolutions(solA, solB, volA = null, volB = null) {
     hexColor: evalProps.hexColor,
     ph: evalProps.ph,
     temperature: evalProps.temperature,
+    _exactTemperature: evalProps.exactTemperature,
     components: mergedComponents,
     hasIndicator: evalProps.hasIndicator,
   };

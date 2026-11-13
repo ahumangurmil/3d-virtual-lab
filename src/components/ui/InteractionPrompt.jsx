@@ -127,13 +127,13 @@ export function InteractionPrompt() {
               </>
             )}
 
-            {/* [T] Turn Burette Stopcock */}
+            {/* [T] / [G] Turn Burette Stopcock (gradual & dropwise) */}
             {targetApparatus.type === 'burette_50' && (
               <>
                 <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
                 <button
                   type="button"
-                  onClick={() => turnBuretteStopcock(10)}
+                  onClick={() => turnBuretteStopcock(5)}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -146,10 +146,53 @@ export function InteractionPrompt() {
                     fontWeight: 500,
                     padding: '1px 2px',
                   }}
-                  title="Turn Burette Stopcock to dispense titrant [T]"
+                  title="Dispense 5.0 mL titrant from burette [T]"
                 >
                   <kbd className="hud-kbd cyan">T</kbd>
-                  <span>Stopcock</span>
+                  <span>5 mL</span>
+                </button>
+
+                <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => turnBuretteStopcock(1)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#7dd3fc',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    padding: '1px 2px',
+                  }}
+                  title="Dispense 1.0 mL titrant from burette"
+                >
+                  <span>1 mL</span>
+                </button>
+
+                <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => turnBuretteStopcock(0.1)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#f472b6',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    padding: '1px 2px',
+                  }}
+                  title="Dispense 1 drop (0.1 mL) near endpoint [G]"
+                >
+                  <kbd className="hud-kbd pink">G</kbd>
+                  <span>0.1 mL Drop</span>
                 </button>
               </>
             )}
@@ -263,7 +306,13 @@ export function InteractionPrompt() {
                 <span style={{ color: 'rgba(255, 255, 255, 0.35)' }}>•</span>
                 <button
                   type="button"
-                  onClick={() => pourLiquid(heldApparatus.id, targetApparatus.id, 25)}
+                  onClick={() =>
+                    pourLiquid(
+                      heldApparatus.id,
+                      targetApparatus.id,
+                      heldApparatus.type === 'indicator_bottle' ? 2 : 25
+                    )
+                  }
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -278,6 +327,8 @@ export function InteractionPrompt() {
                   title={
                     heldApparatus.type === 'pipette_25'
                       ? 'Aspirate / Dispense 25 mL [P]'
+                      : heldApparatus.type === 'indicator_bottle'
+                      ? `Add 3 drops of indicator into ${targetApparatus.name} [P]`
                       : `Transfer liquid into ${targetApparatus.name} [P]`
                   }
                 >
@@ -287,6 +338,8 @@ export function InteractionPrompt() {
                       ? (heldApparatus.liquid?.volume || 0) < 5
                         ? 'Aspirate 25 mL'
                         : 'Dispense 25 mL'
+                      : heldApparatus.type === 'indicator_bottle'
+                      ? 'Add 3 Drops'
                       : 'Transfer Liquid'}
                   </span>
                 </button>

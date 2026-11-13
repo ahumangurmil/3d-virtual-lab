@@ -213,7 +213,11 @@ export function CameraControls() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <kbd className="hud-kbd cyan">T</kbd>
-              <span style={{ color: 'var(--hud-text-secondary)' }}>Turn Stopcock</span>
+              <span style={{ color: 'var(--hud-text-secondary)' }}>Stopcock (5 mL)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <kbd className="hud-kbd pink">G</kbd>
+              <span style={{ color: 'var(--hud-text-secondary)' }}>Dropwise (0.1 mL)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <kbd className="hud-kbd pink">S</kbd>

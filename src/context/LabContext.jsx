@@ -59,7 +59,6 @@ export function LabProvider({ children }) {
   const startTitration = useCallback(() => {
     titrationInstance.state.start();
     titrationInstance.state.syncWithApparatus(apparatusList, activeStationId);
-    titrationInstance.controller.checkStep1Equipment(apparatusList, activeStationId);
   }, [titrationInstance, apparatusList, activeStationId]);
 
   const resetTitration = useCallback(() => {
@@ -88,19 +87,18 @@ export function LabProvider({ children }) {
   }, [titrationInstance, apparatusList, activeStationId]);
 
   const setTitrationStudentReading = useCallback((reading) => {
-    titrationInstance.state.setStudentReading(reading);
-    const currentStep = titrationInstance.state.getCurrentStep();
-    if (currentStep?.stepNumber === 9) {
-      const readingVal = parseFloat(reading);
-      if (!isNaN(readingVal) && readingVal > 0) {
-        titrationInstance.state.completeStep(9);
-        titrationInstance.state.setFeedback(
-          `Recorded burette reading: ${readingVal.toFixed(1)} mL. Titration analysis completed successfully!`,
-          'success'
-        );
-      }
-    }
-  }, [titrationInstance]);
+    const res = titrationInstance.controller.validateAndSubmitReading(
+      reading,
+      apparatusList,
+      activeStationId
+    );
+    setInteractionNotice({
+      message: res.message,
+      type: res.success ? 'success' : 'warning',
+      timestamp: Date.now(),
+    });
+    return res.success;
+  }, [titrationInstance, apparatusList, activeStationId]);
 
   const selectedApparatus = useMemo(() => {
     return apparatusList.find((item) => item.id === selectedId) || null;
@@ -122,11 +120,21 @@ export function LabProvider({ children }) {
     setSelectedId(id);
     if (id) {
       const item = apparatusList.find((a) => a.id === id);
-      if (item && item.workstationId) {
+      const targetStationId = item?.workstationId || activeStationId;
+      if (item && item.workstationId && item.workstationId !== activeStationId) {
         setActiveStationId(item.workstationId);
       }
+      if (titrationInstance.state.status === 'in_progress') {
+        titrationInstance.controller.handlePlayerAction(
+          'INSPECT',
+          { targetId: id },
+          { success: true },
+          apparatusList,
+          targetStationId
+        );
+      }
     }
-  }, [apparatusList]);
+  }, [apparatusList, activeStationId, titrationInstance]);
 
   const hoverApparatus = useCallback((id) => {
     setHoveredId(id);
@@ -146,13 +154,17 @@ export function LabProvider({ children }) {
       return;
     }
 
-    setApparatusList((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? { ...a, isHeld: true, heldBy: 'player', currentSurface: 'In Hands (Carried)' }
-          : a
-      )
+    const targetStationId = item.workstationId || activeStationId;
+    if (item.workstationId && item.workstationId !== activeStationId) {
+      setActiveStationId(item.workstationId);
+    }
+
+    const nextList = apparatusList.map((a) =>
+      a.id === id
+        ? { ...a, isHeld: true, heldBy: 'player', currentSurface: 'In Hands (Carried)' }
+        : a
     );
+    setApparatusList(nextList);
     setHeldApparatusId(id);
     setSelectedId(id);
     setTargetApparatusId(null);
@@ -161,7 +173,15 @@ export function LabProvider({ children }) {
       type: 'success',
       timestamp: Date.now(),
     });
-  }, [apparatusList]);
+
+    titrationInstance.controller.handlePlayerAction(
+      'PICK_UP',
+      { targetId: id },
+      { success: true },
+      nextList,
+      targetStationId
+    );
+  }, [apparatusList, activeStationId, titrationInstance]);
 
   const placeApparatus = useCallback(() => {
     if (!heldApparatusId) return;
@@ -179,29 +199,41 @@ export function LabProvider({ children }) {
     }
 
     const { snappedPosition, surfaceId, surfaceName } = placementState;
+    const targetStationId = surfaceId || item.workstationId || activeStationId;
+    if (surfaceId && surfaceId !== activeStationId) {
+      setActiveStationId(surfaceId);
+    }
 
-    setApparatusList((prev) =>
-      prev.map((a) =>
-        a.id === heldApparatusId
-          ? {
-              ...a,
-              isHeld: false,
-              heldBy: null,
-              position: snappedPosition,
-              currentSurface: surfaceName,
-              workstationId: surfaceId || a.workstationId,
-            }
-          : a
-      )
+    const nextList = apparatusList.map((a) =>
+      a.id === heldApparatusId
+        ? {
+            ...a,
+            isHeld: false,
+            heldBy: null,
+            position: snappedPosition,
+            currentSurface: surfaceName,
+            workstationId: surfaceId || a.workstationId,
+          }
+        : a
     );
+    setApparatusList(nextList);
 
     setHeldApparatusId(null);
+    setPlacementState(null);
     setInteractionNotice({
       message: `Placed ${item.name} on ${surfaceName}.`,
       type: 'success',
       timestamp: Date.now(),
     });
-  }, [heldApparatusId, apparatusList, placementState]);
+
+    titrationInstance.controller.handlePlayerAction(
+      'PLACE',
+      { targetId: heldApparatusId },
+      { success: true },
+      nextList,
+      targetStationId
+    );
+  }, [heldApparatusId, apparatusList, placementState, activeStationId, titrationInstance]);
 
   const selectStation = useCallback((stationId) => {
     setActiveStationId(stationId);
@@ -287,43 +319,44 @@ export function LabProvider({ children }) {
       return false;
     }
 
-    let success = false;
-    setApparatusList((prevList) => {
-      const outcome = executeChemistryAction(
-        CHEMISTRY_ACTION_TYPES.POUR,
+    const outcome = executeChemistryAction(
+      CHEMISTRY_ACTION_TYPES.POUR,
+      { sourceId: src, destId: dst, amount },
+      apparatusList
+    );
+
+    let noticeMsg = outcome.message;
+    if (isPipetteAspirate && outcome.success) {
+      const actualVol = outcome.result?.transferredVolume || amount;
+      noticeMsg = `Aspirated ${actualVol.toFixed(1)} mL of solution into the 25 mL volumetric pipette. Move to conical flask to dispense.`;
+    }
+
+    const targetStationId = dstItem?.workstationId || srcItem?.workstationId || activeStationId;
+    if ((dstItem?.workstationId || srcItem?.workstationId) && targetStationId !== activeStationId) {
+      setActiveStationId(targetStationId);
+    }
+
+    if (outcome.success) {
+      setApparatusList(outcome.updatedApparatusList);
+      titrationInstance.controller.handlePlayerAction(
+        isPipetteAspirate ? 'ASPIRATE' : CHEMISTRY_ACTION_TYPES.POUR,
         { sourceId: src, destId: dst, amount },
-        prevList
+        outcome,
+        outcome.updatedApparatusList,
+        targetStationId
       );
-      success = outcome.success;
+    }
 
-      let noticeMsg = outcome.message;
-      if (isPipetteAspirate && outcome.success) {
-        const actualVol = outcome.result?.transferredVolume || amount;
-        noticeMsg = `Aspirated ${actualVol.toFixed(1)} mL of solution into the 25 mL volumetric pipette. Move to conical flask to dispense.`;
-      }
-
-      setInteractionNotice({
-        message: noticeMsg,
-        type: outcome.success ? 'success' : 'warning',
-        timestamp: Date.now(),
-      });
-
-      if (outcome.success) {
-        titrationInstance.controller.handlePlayerAction(
-          isPipetteAspirate ? 'ASPIRATE' : CHEMISTRY_ACTION_TYPES.POUR,
-          { sourceId: src, destId: dst, amount },
-          outcome,
-          outcome.updatedApparatusList,
-          activeStationId
-        );
-        return outcome.updatedApparatusList;
-      }
-      return prevList;
+    setInteractionNotice({
+      message: noticeMsg,
+      type: outcome.success ? 'success' : 'warning',
+      timestamp: Date.now(),
     });
-    return success;
+
+    return outcome.success;
   }, [heldApparatusId, targetApparatusId, titrationInstance, apparatusList, activeStationId]);
 
-  const turnBuretteStopcock = useCallback((amount = 10) => {
+  const turnBuretteStopcock = useCallback((amount = 5) => {
     const stationItems = activeStationId
       ? apparatusList.filter((a) => a.workstationId === activeStationId || !a.workstationId)
       : apparatusList;
@@ -333,6 +366,20 @@ export function LabProvider({ children }) {
     if (!burette || !flask) {
       setInteractionNotice({
         message: 'Burette or conical flask not found on workstation.',
+        type: 'warning',
+        timestamp: Date.now(),
+      });
+      return false;
+    }
+
+    const validation = titrationInstance.controller.validateAction(
+      CHEMISTRY_ACTION_TYPES.POUR,
+      { sourceId: burette.id, destId: flask.id, amount, actionKind: 'TURN_STOPCOCK' },
+      apparatusList
+    );
+    if (!validation.allowed) {
+      setInteractionNotice({
+        message: validation.reason,
         type: 'warning',
         timestamp: Date.now(),
       });
@@ -349,33 +396,30 @@ export function LabProvider({ children }) {
     }
 
     // Transfer titrant from burette into conical flask
-    let success = false;
-    setApparatusList((prevList) => {
-      const outcome = executeChemistryAction(
-        CHEMISTRY_ACTION_TYPES.POUR,
-        { sourceId: burette.id, destId: flask.id, amount },
-        prevList
-      );
-      success = outcome.success;
-      setInteractionNotice({
-        message: outcome.message,
-        type: outcome.success ? 'success' : 'warning',
-        timestamp: Date.now(),
-      });
+    const outcome = executeChemistryAction(
+      CHEMISTRY_ACTION_TYPES.POUR,
+      { sourceId: burette.id, destId: flask.id, amount },
+      apparatusList
+    );
 
-      if (outcome.success) {
-        titrationInstance.controller.handlePlayerAction(
-          'TURN_STOPCOCK',
-          { sourceId: burette.id, destId: flask.id, amount },
-          outcome,
-          outcome.updatedApparatusList,
-          activeStationId
-        );
-        return outcome.updatedApparatusList;
-      }
-      return prevList;
+    if (outcome.success) {
+      setApparatusList(outcome.updatedApparatusList);
+      titrationInstance.controller.handlePlayerAction(
+        'TURN_STOPCOCK',
+        { sourceId: burette.id, destId: flask.id, amount },
+        outcome,
+        outcome.updatedApparatusList,
+        activeStationId
+      );
+    }
+
+    setInteractionNotice({
+      message: outcome.message,
+      type: outcome.success ? 'success' : 'warning',
+      timestamp: Date.now(),
     });
-    return success;
+
+    return outcome.success;
   }, [activeStationId, apparatusList, titrationInstance]);
 
   const swirlConicalFlask = useCallback((flaskId = null) => {
@@ -453,73 +497,64 @@ export function LabProvider({ children }) {
       return false;
     }
 
-    let success = false;
-    setApparatusList((prevList) => {
-      const outcome = executeChemistryAction(
+    const outcome = executeChemistryAction(
+      CHEMISTRY_ACTION_TYPES.ADD_REAGENT,
+      { targetId, chemicalId, amount, concentration },
+      apparatusList
+    );
+
+    if (outcome.success) {
+      setApparatusList(outcome.updatedApparatusList);
+      titrationInstance.controller.handlePlayerAction(
         CHEMISTRY_ACTION_TYPES.ADD_REAGENT,
         { targetId, chemicalId, amount, concentration },
-        prevList
+        outcome,
+        outcome.updatedApparatusList,
+        activeStationId
       );
-      success = outcome.success;
-      setInteractionNotice({
-        message: outcome.message,
-        type: outcome.success ? 'success' : 'warning',
-        timestamp: Date.now(),
-      });
-      if (outcome.success) {
-        titrationInstance.controller.handlePlayerAction(
-          CHEMISTRY_ACTION_TYPES.ADD_REAGENT,
-          { targetId, chemicalId, amount, concentration },
-          outcome,
-          outcome.updatedApparatusList,
-          activeStationId
-        );
-        return outcome.updatedApparatusList;
-      }
-      return prevList;
+    }
+
+    setInteractionNotice({
+      message: outcome.message,
+      type: outcome.success ? 'success' : 'warning',
+      timestamp: Date.now(),
     });
-    return success;
+
+    return outcome.success;
   }, [titrationInstance, apparatusList, activeStationId]);
 
   const measureApparatus = useCallback((targetId) => {
     if (!targetId) return null;
-    let measurement = null;
-    setApparatusList((prevList) => {
-      const outcome = executeChemistryAction(
-        CHEMISTRY_ACTION_TYPES.MEASURE,
-        { targetId },
-        prevList
-      );
-      measurement = outcome.result;
-      setInteractionNotice({
-        message: outcome.message,
-        type: 'info',
-        timestamp: Date.now(),
-      });
-      return prevList;
+    const outcome = executeChemistryAction(
+      CHEMISTRY_ACTION_TYPES.MEASURE,
+      { targetId },
+      apparatusList
+    );
+    setInteractionNotice({
+      message: outcome.message,
+      type: 'info',
+      timestamp: Date.now(),
     });
-    return measurement;
-  }, []);
+    return outcome.result;
+  }, [apparatusList]);
 
   const heatApparatus = useCallback((targetId, deltaTemp = 5) => {
     if (!targetId) return false;
-    let success = false;
-    setApparatusList((prevList) => {
-      const outcome = executeChemistryAction(
-        CHEMISTRY_ACTION_TYPES.HEAT,
-        { targetId, deltaTemp },
-        prevList
-      );
-      success = outcome.success;
-      setInteractionNotice({
-        message: outcome.message,
-        type: outcome.success ? 'success' : 'warning',
-        timestamp: Date.now(),
-      });
-      return outcome.success ? outcome.updatedApparatusList : prevList;
+    const outcome = executeChemistryAction(
+      CHEMISTRY_ACTION_TYPES.HEAT,
+      { targetId, deltaTemp },
+      apparatusList
+    );
+    if (outcome.success) {
+      setApparatusList(outcome.updatedApparatusList);
+    }
+    setInteractionNotice({
+      message: outcome.message,
+      type: outcome.success ? 'success' : 'warning',
+      timestamp: Date.now(),
     });
-    return success;
-  }, []);
+    return outcome.success;
+  }, [apparatusList]);
 
   const value = useMemo(
     () => ({

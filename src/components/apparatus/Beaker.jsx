@@ -3,15 +3,12 @@ import * as THREE from 'three';
 import { GlassMaterial } from './GlassMaterial';
 
 export function Beaker({
-  id,
   type = 'beaker_250',
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   liquid,
   isSelected,
   isHovered,
-  onSelect,
-  onHover,
 }) {
   const groupRef = useRef();
 
@@ -42,20 +39,6 @@ export function Beaker({
       ref={groupRef}
       position={[position[0], position[1] + (isHovered && !isSelected ? 0.005 : 0), position[2]]}
       rotation={rotation}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onSelect) onSelect(id);
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        if (onHover) onHover(id);
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={(e) => {
-        e.stopPropagation();
-        if (onHover) onHover(null);
-        document.body.style.cursor = 'default';
-      }}
     >
       {/* Outer Glass Wall */}
       <mesh position={[0, height / 2, 0]} castShadow receiveShadow>

@@ -15,6 +15,7 @@ export function ExperimentPanel() {
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [readingInput, setReadingInput] = useState('');
+  const [demoAssistEnabled, setDemoAssistEnabled] = useState(false);
 
   if (!titrationState) return null;
 
@@ -24,10 +25,12 @@ export function ExperimentPanel() {
     currentStep,
     totalSteps,
     completedSteps,
+    requiredEquipmentStatus,
     hclVolume,
     hclConcentration,
     naohVolume,
     naohConcentration,
+    buretteDispensedVolume,
     indicatorAdded,
     endpointDetected,
     lastFeedback,
@@ -36,6 +39,32 @@ export function ExperimentPanel() {
   const isIdle = status === EXPERIMENT_STATUS.IDLE;
   const isCompleted = status === EXPERIMENT_STATUS.COMPLETED;
   const progressPercent = Math.round(((completedSteps.length) / totalSteps) * 100);
+  const equipmentItems = Object.values(requiredEquipmentStatus || {});
+
+  const getStepLabActionGuide = (stepNum) => {
+    switch (stepNum) {
+      case 1:
+        return 'Walk to a student bench and inspect [E] or pick up [F] each of the 5 apparatus items below.';
+      case 2:
+        return 'Pick up the 25 mL Pipette [F] -> aim at HCl Beaker & press [P] to aspirate -> aim at Conical Flask & press [P] to dispense -> place pipette [F].';
+      case 3:
+        return 'Pick up Phenolphthalein Bottle [F] -> aim at Conical Flask & press [P] to add 3 drops -> place bottle [F].';
+      case 4:
+        return 'Pick up NaOH Supply Beaker [F] -> aim at 50 mL Burette & press [P] twice to fill to 50.0 mL -> place beaker [F].';
+      case 5:
+        return 'Aim at Conical Flask and press [A] (or pick up [F] and place it directly beneath the burette tip).';
+      case 6:
+        return 'Aim at the 50 mL Burette and press [T] to dispense an initial volume of NaOH.';
+      case 7:
+        return 'Aim at the Conical Flask and press [S] to physically swirl and mix the solution.';
+      case 8:
+        return 'Dispense NaOH gradually ([T] 5 mL, then [G] 0.1 mL drops near 25 mL) and swirl ([S]) until persistent faint pink (pH >= 8.2).';
+      case 9:
+        return 'Aim at the Burette and press [M] or [E] to read the remaining volume, then enter the dispensed mL below.';
+      default:
+        return '';
+    }
+  };
 
   const handleReadingSubmit = (e) => {
     e?.preventDefault();
@@ -264,6 +293,87 @@ export function ExperimentPanel() {
               )}
             </div>
 
+            {/* Step 1 Live Equipment Checklist */}
+            {!isCompleted && currentStep?.stepNumber === 1 && equipmentItems.length > 0 && (
+              <div
+                style={{
+                  backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                  border: '1px solid var(--hud-border)',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  marginBottom: '10px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '10px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: '#94a3b8',
+                    fontWeight: 700,
+                    marginBottom: '6px',
+                  }}
+                >
+                  Required Apparatus ({equipmentItems.filter((eq) => eq.collected).length}/{equipmentItems.length} Verified)
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {equipmentItems.map((eq) => (
+                    <div
+                      key={eq.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '11px',
+                        color: eq.collected ? '#6ee7b7' : 'var(--hud-text-secondary)',
+                      }}
+                    >
+                      <span>
+                        {eq.collected ? '✓' : '○'} {eq.name}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          color: eq.collected ? '#34d399' : eq.present ? '#fbbf24' : '#94a3b8',
+                        }}
+                      >
+                        {eq.collected ? 'Verified' : eq.present ? 'On bench' : 'Missing'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Physical 3D Lab Controls Card */}
+            {!isCompleted && currentStep && (
+              <div
+                style={{
+                  backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  marginBottom: '10px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '10px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: '#38bdf8',
+                    fontWeight: 700,
+                    marginBottom: '3px',
+                  }}
+                >
+                  Perform In 3D Lab
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--hud-text-secondary)', lineHeight: 1.4 }}>
+                  {getStepLabActionGuide(currentStep.stepNumber)}
+                </div>
+              </div>
+            )}
+
             {/* Step 9 Reading Form */}
             {!isCompleted && currentStep?.stepNumber === 9 && (
               <form onSubmit={handleReadingSubmit} style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
@@ -380,6 +490,7 @@ export function ExperimentPanel() {
                 <div style={{ color: 'var(--hud-text-muted)' }}>NaOH Burette</div>
                 <div style={{ color: 'var(--hud-text-primary)', fontWeight: 600 }}>
                   {naohVolume.toFixed(1)} mL ({naohConcentration} M)
+                  {completedSteps.includes(4) ? ` • Used ${buretteDispensedVolume.toFixed(1)} mL` : ''}
                 </div>
               </div>
               <div>
@@ -396,28 +507,51 @@ export function ExperimentPanel() {
               </div>
             </div>
 
-            {/* Action Bar (Step Auto-assist & Reset) */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-              {!isCompleted && currentStep && currentStep.stepNumber !== 9 && (
+            {/* Action Bar (Reset + Optional Demo/Accessibility Mode) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '10px',
+                    color: 'var(--hud-text-muted)',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                  title="Optional instructor/accessibility helper toggle (off by default)"
+                >
+                  <input
+                    type="checkbox"
+                    checked={demoAssistEnabled}
+                    onChange={(e) => setDemoAssistEnabled(e.target.checked)}
+                    style={{ accentColor: '#38bdf8', cursor: 'pointer' }}
+                  />
+                  <span>Demo / Accessibility Mode</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={resetTitration}
+                  className="hud-action-btn"
+                  style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--hud-text-muted)' }}
+                >
+                  Reset
+                </button>
+              </div>
+
+              {demoAssistEnabled && !isCompleted && currentStep && currentStep.stepNumber !== 9 && (
                 <button
                   type="button"
                   onClick={executeTitrationStepAction}
                   className="hud-action-btn primary"
-                  style={{ flex: 1, padding: '6px 10px', fontSize: '11px' }}
-                  title="Execute the current procedural step action"
+                  style={{ width: '100%', padding: '6px 10px', fontSize: '11px' }}
+                  title="Optional accessibility/demo helper for the current step"
                 >
-                  <span>Auto-Assist Step</span>
+                  <span>Demo Assist: Step {currentStep.stepNumber}</span>
                 </button>
               )}
-
-              <button
-                type="button"
-                onClick={resetTitration}
-                className="hud-action-btn"
-                style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--hud-text-muted)' }}
-              >
-                Reset
-              </button>
             </div>
           </div>
         )}

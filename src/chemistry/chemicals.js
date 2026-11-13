@@ -167,6 +167,25 @@ export const CHEMICAL_DEFINITIONS = {
     description: 'Deep purple oxidizing reagent for redox titration.',
     safetyHazard: 'Strong oxidizer. Can stain surfaces dark brown.',
   },
+
+  'sodium-chloride': {
+    id: 'sodium-chloride',
+    name: 'Sodium Chloride',
+    formula: 'NaCl',
+    defaultConcentration: 0.1,
+    unit: 'M',
+    state: CHEMICAL_STATES.AQUEOUS,
+    color: 'clear',
+    hexColor: '#f1f5f9',
+    ph: 7.0,
+    density: 1.004,
+    molarMass: 58.44, // g/mol
+    isAcid: false,
+    isBase: false,
+    isIndicator: false,
+    description: 'Neutral aqueous salt formed by neutralization of hydrochloric acid with sodium hydroxide.',
+    safetyHazard: 'None at standard laboratory concentrations.',
+  },
 };
 
 /**

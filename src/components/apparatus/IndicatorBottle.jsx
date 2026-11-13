@@ -26,13 +26,15 @@ export function IndicatorBottle({
       {/* Base selection outline ring */}
       {(isSelected || isHovered) && (
         <group position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[radius * 1.35, 32]} />
-          <meshBasicMaterial
-            color={isSelected ? '#0284c7' : '#0d9488'}
-            transparent
-            opacity={isSelected ? 0.22 : 0.12}
-            side={THREE.DoubleSide}
-          />
+          <mesh>
+            <circleGeometry args={[radius * 1.35, 32]} />
+            <meshBasicMaterial
+              color={isSelected ? '#0284c7' : '#0d9488'}
+              transparent
+              opacity={isSelected ? 0.22 : 0.12}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
           <mesh position={[0, 0, 0.001]}>
             <ringGeometry args={[radius * 1.25, radius * 1.36, 32]} />
             <meshBasicMaterial
