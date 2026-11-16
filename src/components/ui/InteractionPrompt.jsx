@@ -1,12 +1,17 @@
 import { useLab } from '../../context/LabContext';
+import {
+  useHeldApparatus,
+  usePlacementState,
+  useTargetApparatus,
+} from '../../store/labStore';
 
 export function InteractionPrompt() {
+  const targetApparatus = useTargetApparatus();
+  const heldApparatus = useHeldApparatus();
+  const placementState = usePlacementState();
   const {
     controlMode,
     povMode,
-    targetApparatus,
-    heldApparatus,
-    placementState,
     selectApparatus,
     pickUpApparatus,
     placeApparatus,

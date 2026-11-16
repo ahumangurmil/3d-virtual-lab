@@ -10,6 +10,7 @@ export function EquipmentInspector() {
     pickUpApparatus,
     placeApparatus,
     updateApparatusState,
+    adjustApparatusVolume,
     pourLiquid,
     addReagent,
     measureApparatus,
@@ -307,51 +308,64 @@ export function EquipmentInspector() {
       )}
 
       {/* Liquid Volume Slider */}
-      {selectedApparatus.liquid && (
-        <div
-          style={{
-            marginBottom: '14px',
-            backgroundColor: 'rgba(15, 23, 42, 0.55)',
-            padding: '8px 10px',
-            borderRadius: '8px',
-            border: '1px solid var(--hud-border)',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px' }}>
-            <span style={{ color: 'var(--hud-text-muted)' }}>Adjust Volume:</span>
-            <span style={{ color: '#38bdf8', fontWeight: 600 }}>{selectedApparatus.liquid.volume} mL</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max={selectedApparatus.liquid.maxVolume || selectedApparatus.capacity || 100}
-            step="5"
-            value={selectedApparatus.liquid.volume}
-            disabled={isTitrationActive}
-            onChange={(e) => {
-              if (isTitrationActive) return;
-              const newVol = Number(e.target.value);
-              updateApparatusState(selectedApparatus.id, {
-                liquid: {
-                  ...selectedApparatus.liquid,
-                  volume: newVol,
-                },
-              });
-            }}
+      {selectedApparatus.liquid && (() => {
+        const currentVol = selectedApparatus.liquid.volume || 0;
+        const isEmptyVessel = currentVol <= 0;
+        const isSliderDisabled = isTitrationActive || isEmptyVessel;
+        const activeComponents = (selectedApparatus.solution?.components || []).filter(
+          (c) => c && ((c.moles || 0) > 1e-12 || c.chemicalId === 'water')
+        );
+        const isIndicatorOnly =
+          activeComponents.length === 1 &&
+          Boolean(activeComponents[0].isIndicator || activeComponents[0].chemicalId === 'phenolphthalein');
+
+        return (
+          <div
             style={{
-              width: '100%',
-              accentColor: 'var(--hud-accent)',
-              cursor: isTitrationActive ? 'not-allowed' : 'pointer',
-              opacity: isTitrationActive ? 0.5 : 1,
+              marginBottom: '14px',
+              backgroundColor: 'rgba(15, 23, 42, 0.55)',
+              padding: '8px 10px',
+              borderRadius: '8px',
+              border: '1px solid var(--hud-border)',
             }}
-          />
-          {isTitrationActive && (
-            <div style={{ marginTop: '4px', fontSize: '10px', color: 'var(--hud-text-muted)' }}>
-              Volume slider disabled during guided practical
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px' }}>
+              <span style={{ color: 'var(--hud-text-muted)' }}>Adjust Volume:</span>
+              <span style={{ color: '#38bdf8', fontWeight: 600 }}>{currentVol} mL</span>
             </div>
-          )}
-        </div>
-      )}
+            <input
+              type="range"
+              min="0"
+              max={selectedApparatus.liquid.maxVolume || selectedApparatus.capacity || 100}
+              step="5"
+              value={currentVol}
+              disabled={isSliderDisabled}
+              onChange={(e) => {
+                if (isSliderDisabled) return;
+                const newVol = Number(e.target.value);
+                adjustApparatusVolume(selectedApparatus.id, newVol);
+              }}
+              style={{
+                width: '100%',
+                accentColor: 'var(--hud-accent)',
+                cursor: isSliderDisabled ? 'not-allowed' : 'pointer',
+                opacity: isSliderDisabled ? 0.5 : 1,
+              }}
+            />
+            <div style={{ marginTop: '4px', fontSize: '10px', color: 'var(--hud-text-muted)' }}>
+              {isTitrationActive
+                ? 'Volume slider disabled during guided practical'
+                : isEmptyVessel
+                ? 'Vessel is empty — add a reagent below before adjusting volume'
+                : isIndicatorOnly
+                ? 'Left: drain proportionally • Top-up disabled for indicator-only vessels'
+                : activeComponents.length > 1
+                ? 'Left: drain proportionally • Right: dilute with distilled water'
+                : 'Left: drain proportionally • Right: top up stock solution'}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Chemistry Actions & Reagent Shortcuts */}
       {(selectedApparatus.capacity || selectedApparatus.liquid) && (

@@ -115,6 +115,7 @@ export class TitrationExperimentState {
    * Evaluates active apparatus on the student workstation and updates state fields.
    */
   syncWithApparatus(apparatusList = [], workstationId = null) {
+    if (this.status !== EXPERIMENT_STATUS.IN_PROGRESS) return;
     if (!apparatusList || apparatusList.length === 0) return;
 
     // Filter relevant station apparatus if specified

@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useLab } from '../../context/LabContext';
+import { useInteractionNotice } from '../../store/labStore';
 
 export function ToastManager() {
-  const { interactionNotice, setInteractionNotice } = useLab();
+  const interactionNotice = useInteractionNotice();
+  const { setInteractionNotice } = useLab();
 
   // Auto-dismiss after 4.5 seconds
   useEffect(() => {

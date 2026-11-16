@@ -56,10 +56,10 @@ export const LAB_SURFACES = [
     name: 'Analytical Balance Bench',
     type: 'side_bench',
     height: 0.95,
-    xMin: 9.3,
-    xMax: 10.3,
-    zMin: 5.6,
-    zMax: 9.4,
+    xMin: 9.75,
+    xMax: 10.35,
+    zMin: -1.72,
+    zMax: 1.72,
   },
 ];
 

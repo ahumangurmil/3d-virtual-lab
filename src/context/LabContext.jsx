@@ -1,11 +1,199 @@
-import { createContext, useContext, useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+} from 'react';
 import { INITIAL_APPARATUS, CAMERA_PRESETS, WORKSTATIONS } from './labConstants';
 import { DEFAULT_PLAYER_NAME, createInitialPlayerState } from '../player/playerTypes';
 import { CHEMISTRY_ACTION_TYPES, executeChemistryAction } from '../chemistry/actionSystem';
+import {
+  addReagentToContainer,
+  applySolutionToApparatus,
+  combineSolutions,
+  createEmptySolution,
+  createInitialSolution,
+} from '../chemistry/chemistryEngine';
 import { TitrationExperimentState } from '../experiments/experimentState';
 import { TitrationController } from '../experiments/TitrationController';
+import { EXPERIMENT_STATUS } from '../experiments/experimentTypes';
+import { labStore } from '../store/labStore';
 
 export { CAMERA_PRESETS, WORKSTATIONS };
+
+/**
+ * Computes a chemistry-consistent volume adjustment for an apparatus vessel.
+ * - Zero volume: resets to createEmptySolution() with no residual solutes.
+ * - Decreasing volume: drains proportionally via combineSolutions(), conserving concentrations.
+ * - Increasing single-component stock: tops up at original concentration via createInitialSolution().
+ * - Increasing multi-component mixture: dilutes with distilled water via addReagentToContainer(), preserving solute moles.
+ * - Empty vessel: rejects volume increases because chemical identity is unknown.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function computeAdjustedVolumeApparatus(apparatus, requestedVolume) {
+  if (!apparatus || !apparatus.liquid) {
+    return {
+      success: false,
+      changed: false,
+      reason: 'Selected apparatus does not support liquid volume adjustment.',
+      updatedApparatus: apparatus,
+    };
+  }
+
+  if (
+    requestedVolume === null ||
+    requestedVolume === undefined ||
+    typeof requestedVolume === 'boolean' ||
+    (typeof requestedVolume === 'string' && requestedVolume.trim() === '')
+  ) {
+    return {
+      success: false,
+      changed: false,
+      reason: 'Invalid volume input: expected a finite non-negative number.',
+      updatedApparatus: apparatus,
+    };
+  }
+
+  const parsedVolume = Number(requestedVolume);
+  if (!Number.isFinite(parsedVolume) || parsedVolume < 0) {
+    return {
+      success: false,
+      changed: false,
+      reason: 'Invalid volume input: volume must be a finite non-negative number.',
+      updatedApparatus: apparatus,
+    };
+  }
+
+  const capacity = Number(apparatus.capacity) || apparatus.liquid?.maxVolume || 250;
+  const currentVol = apparatus.volume !== undefined ? apparatus.volume : (apparatus.liquid?.volume || 0);
+  const targetVol = Math.round(Math.min(parsedVolume, capacity) * 100) / 100;
+
+  if (Math.abs(targetVol - currentVol) < 1e-6) {
+    return {
+      success: true,
+      changed: false,
+      updatedApparatus: apparatus,
+    };
+  }
+
+  // Empty vessels cannot have volume increased without specifying a reagent
+  if (currentVol <= 0) {
+    return {
+      success: false,
+      changed: false,
+      reason: 'Cannot increase volume of an empty vessel because its chemical identity is unknown.',
+      updatedApparatus: apparatus,
+    };
+  }
+
+  // Setting volume to zero empties the vessel cleanly with no residual solutes
+  if (targetVol <= 0) {
+    return {
+      success: true,
+      changed: true,
+      updatedApparatus: applySolutionToApparatus(apparatus, createEmptySolution()),
+    };
+  }
+
+  const currentSol =
+    apparatus.solution ||
+    createInitialSolution({
+      chemicalId: apparatus.contents && apparatus.contents !== 'empty' ? apparatus.contents : 'water',
+      volume: currentVol,
+      concentration: apparatus.concentration,
+      temperature: apparatus.temperature,
+    });
+
+  // Decreasing volume: discard/drain excess proportionally while preserving concentration
+  if (targetVol < currentVol) {
+    const drainedSolution = combineSolutions(currentSol, createEmptySolution(), targetVol, 0);
+    return {
+      success: true,
+      changed: true,
+      updatedApparatus: applySolutionToApparatus(apparatus, drainedSolution),
+    };
+  }
+
+  // Increasing volume: check whether chemical identity is unambiguous single-component stock
+  const activeComponents = (currentSol.components || []).filter(
+    (c) => c && ((c.moles || 0) > 1e-12 || c.chemicalId === 'water')
+  );
+
+  if (activeComponents.length === 0) {
+    return {
+      success: false,
+      changed: false,
+      reason: 'Cannot increase volume of a vessel with unknown chemical composition.',
+      updatedApparatus: apparatus,
+    };
+  }
+
+  if (activeComponents.length === 1) {
+    const singleComp = activeComponents[0];
+
+    if (singleComp.isIndicator || singleComp.chemicalId === 'phenolphthalein') {
+      return {
+        success: false,
+        changed: false,
+        reason: 'Cannot increase volume of an indicator-only solution through the volume slider.',
+        updatedApparatus: apparatus,
+      };
+    }
+
+    if (Math.abs((singleComp.volume || 0) - currentVol) > 0.15) {
+      return {
+        success: false,
+        changed: false,
+        reason: 'Cannot increase volume: chemical composition is ambiguous.',
+        updatedApparatus: apparatus,
+      };
+    }
+
+    const stockConc =
+      singleComp.concentration !== undefined && singleComp.concentration !== null
+        ? singleComp.concentration
+        : currentSol.concentration;
+    const currentTemp =
+      typeof currentSol._exactTemperature === 'number'
+        ? currentSol._exactTemperature
+        : currentSol.temperature ?? apparatus.temperature ?? 24.0;
+
+    const toppedSolution = createInitialSolution({
+      chemicalId: singleComp.chemicalId,
+      volume: targetVol,
+      concentration: stockConc,
+      temperature: currentTemp,
+    });
+
+    return {
+      success: true,
+      changed: true,
+      updatedApparatus: applySolutionToApparatus(apparatus, toppedSolution),
+    };
+  }
+
+  // Multi-component mixture (or diluted solution): top up with distilled water to preserve solute moles
+  const addedVol = Math.round((targetVol - currentVol) * 100) / 100;
+  const diluted = addReagentToContainer(apparatus, 'water', addedVol);
+  if (!diluted.success) {
+    return {
+      success: false,
+      changed: false,
+      reason: diluted.reason || 'Unable to dilute solution.',
+      updatedApparatus: apparatus,
+    };
+  }
+
+  return {
+    success: true,
+    changed: true,
+    updatedApparatus: diluted.updatedApparatus,
+  };
+}
 
 const LabContext = createContext(null);
 
@@ -51,10 +239,43 @@ export function LabProvider({ children }) {
     return unsub;
   }, [titrationInstance]);
 
-  // Synchronize titration state when apparatus list changes
+  // Synchronize titration state when apparatus list changes (only while titration is active)
   useEffect(() => {
+    if (titrationInstance.state.status !== EXPERIMENT_STATUS.IN_PROGRESS) return;
     titrationInstance.state.syncWithApparatus(apparatusList, activeStationId);
   }, [titrationInstance, apparatusList, activeStationId]);
+
+  /**
+   * Stage 4A One-Way Sync Bridge (LabContext -> labStore):
+   * - LabContext remains the authoritative state owner during Stage 4A.
+   * - Every commit updating high-frequency or entity state mirrors those fields into
+   *   `labStore` in a single batched `patch()` call.
+   * - Because LabContext never subscribes back to `labStore`, no synchronization loop
+   *   can occur.
+   * - Future stages (4B-4E) will transition setters to write directly to `labStore`
+   *   and retire each React `useState` hook once all its consumers migrate.
+   */
+  useLayoutEffect(() => {
+    labStore.patch({
+      apparatusList,
+      activeStationId,
+      selectedId,
+      hoveredId,
+      heldApparatusId,
+      targetApparatusId,
+      placementState,
+      interactionNotice,
+    });
+  }, [
+    apparatusList,
+    activeStationId,
+    selectedId,
+    hoveredId,
+    heldApparatusId,
+    targetApparatusId,
+    placementState,
+    interactionNotice,
+  ]);
 
   const startTitration = useCallback(() => {
     titrationInstance.state.start();
@@ -119,6 +340,8 @@ export function LabProvider({ children }) {
   const selectApparatus = useCallback((id) => {
     setSelectedId(id);
     if (id) {
+      const { activeStationId } = labStore.getState();
+      const apparatusList = labStore.getApparatusList();
       const item = apparatusList.find((a) => a.id === id);
       const targetStationId = item?.workstationId || activeStationId;
       if (item && item.workstationId && item.workstationId !== activeStationId) {
@@ -134,13 +357,15 @@ export function LabProvider({ children }) {
         );
       }
     }
-  }, [apparatusList, activeStationId, titrationInstance]);
+  }, [titrationInstance]);
 
   const hoverApparatus = useCallback((id) => {
     setHoveredId(id);
   }, []);
 
   const pickUpApparatus = useCallback((id) => {
+    const { activeStationId } = labStore.getState();
+    const apparatusList = labStore.getApparatusList();
     const item = apparatusList.find((a) => a.id === id);
     if (!item) return;
 
@@ -181,11 +406,13 @@ export function LabProvider({ children }) {
       nextList,
       targetStationId
     );
-  }, [apparatusList, activeStationId, titrationInstance]);
+  }, [titrationInstance]);
 
   const placeApparatus = useCallback(() => {
+    const { heldApparatusId, placementState, activeStationId } = labStore.getState();
     if (!heldApparatusId) return;
 
+    const apparatusList = labStore.getApparatusList();
     const item = apparatusList.find((a) => a.id === heldApparatusId);
     if (!item) return;
 
@@ -233,7 +460,7 @@ export function LabProvider({ children }) {
       nextList,
       targetStationId
     );
-  }, [heldApparatusId, apparatusList, placementState, activeStationId, titrationInstance]);
+  }, [titrationInstance]);
 
   const selectStation = useCallback((stationId) => {
     setActiveStationId(stationId);
@@ -273,12 +500,48 @@ export function LabProvider({ children }) {
     );
   }, []);
 
+  const adjustApparatusVolume = useCallback((id, requestedVolume) => {
+    if (!id) return false;
+    if (titrationInstance.state.status === EXPERIMENT_STATUS.IN_PROGRESS) {
+      setInteractionNotice({
+        message: 'Volume slider is disabled during an active guided titration practical.',
+        type: 'warning',
+        timestamp: Date.now(),
+      });
+      return false;
+    }
+
+    const target = apparatusList.find((item) => item.id === id);
+    if (!target) return false;
+
+    const result = computeAdjustedVolumeApparatus(target, requestedVolume);
+    if (!result.success) {
+      if (result.reason) {
+        setInteractionNotice({
+          message: result.reason,
+          type: 'warning',
+          timestamp: Date.now(),
+        });
+      }
+      return false;
+    }
+
+    if (result.changed) {
+      setApparatusList((prev) =>
+        prev.map((item) => (item.id === id ? result.updatedApparatus : item))
+      );
+    }
+    return true;
+  }, [apparatusList, titrationInstance]);
+
   const handlePlayerStateUpdate = useCallback((latestState) => {
     playerStateRef.current = latestState;
   }, []);
 
   // ================= CHEMISTRY ACTION DISPATCHERS =================
   const pourLiquid = useCallback((sourceId = null, destId = null, amount = 25) => {
+    const { heldApparatusId, targetApparatusId, activeStationId } = labStore.getState();
+    const apparatusList = labStore.getApparatusList();
     let src = sourceId || heldApparatusId;
     let dst = destId || targetApparatusId;
 
@@ -354,9 +617,11 @@ export function LabProvider({ children }) {
     });
 
     return outcome.success;
-  }, [heldApparatusId, targetApparatusId, titrationInstance, apparatusList, activeStationId]);
+  }, [titrationInstance]);
 
   const turnBuretteStopcock = useCallback((amount = 5) => {
+    const { activeStationId } = labStore.getState();
+    const apparatusList = labStore.getApparatusList();
     const stationItems = activeStationId
       ? apparatusList.filter((a) => a.workstationId === activeStationId || !a.workstationId)
       : apparatusList;
@@ -420,9 +685,11 @@ export function LabProvider({ children }) {
     });
 
     return outcome.success;
-  }, [activeStationId, apparatusList, titrationInstance]);
+  }, [titrationInstance]);
 
   const swirlConicalFlask = useCallback((flaskId = null) => {
+    const { activeStationId } = labStore.getState();
+    const apparatusList = labStore.getApparatusList();
     const stationItems = activeStationId
       ? apparatusList.filter((a) => a.workstationId === activeStationId || !a.workstationId)
       : apparatusList;
@@ -460,9 +727,11 @@ export function LabProvider({ children }) {
       activeStationId
     );
     return true;
-  }, [activeStationId, apparatusList, titrationInstance]);
+  }, [titrationInstance]);
 
   const alignFlaskUnderBurette = useCallback(() => {
+    const { activeStationId } = labStore.getState();
+    const apparatusList = labStore.getApparatusList();
     const res = titrationInstance.controller.positionFlaskUnderBurette(apparatusList, activeStationId);
     if (res.success && res.updatedApparatusList) {
       setApparatusList(res.updatedApparatusList);
@@ -473,7 +742,7 @@ export function LabProvider({ children }) {
       timestamp: Date.now(),
     });
     return res.success;
-  }, [titrationInstance, apparatusList, activeStationId]);
+  }, [titrationInstance]);
 
   const mixContainers = useCallback((containerAId, containerBId, amount = 25) => {
     return pourLiquid(containerAId, containerBId, amount);
@@ -525,6 +794,7 @@ export function LabProvider({ children }) {
 
   const measureApparatus = useCallback((targetId) => {
     if (!targetId) return null;
+    const apparatusList = labStore.getApparatusList();
     const outcome = executeChemistryAction(
       CHEMISTRY_ACTION_TYPES.MEASURE,
       { targetId },
@@ -536,7 +806,7 @@ export function LabProvider({ children }) {
       timestamp: Date.now(),
     });
     return outcome.result;
-  }, [apparatusList]);
+  }, []);
 
   const heatApparatus = useCallback((targetId, deltaTemp = 5) => {
     if (!targetId) return false;
@@ -610,6 +880,7 @@ export function LabProvider({ children }) {
       hoverApparatus,
       setCameraPreset,
       updateApparatusState,
+      adjustApparatusVolume,
       teleportPlayerTo,
       teleportToStation,
       handlePlayerStateUpdate,
@@ -656,6 +927,7 @@ export function LabProvider({ children }) {
       hoverApparatus,
       setCameraPreset,
       updateApparatusState,
+      adjustApparatusVolume,
       teleportPlayerTo,
       teleportToStation,
       handlePlayerStateUpdate,
